@@ -27,11 +27,49 @@
 - 图标按钮有悬停提示；树头部使用纵向折叠图标。手动刷新和自动同步期间刷新图标都会旋转，手动刷新另有“刷新中…”提示。自动同步文案为“自动同步 · 每 2 秒”。消息提示显示 3 秒后自动消失。
 - 浏览状态按工作目录分别保存在用户数据目录，手动重新打开时恢复。文件内容不提供编辑和保存。
 
-安装依赖、类型检查、构建及打包：`npm ci`、`npm run check`、`npm run build`、`npm run package`。
+## 安装与本机配置
+
+安装依赖、类型检查和构建：`npm ci`、`npm run check`、`npm run build`。
 
 UI 使用 shadcn CLI 4.23.0 生成的 Base Nova 组件与 Tailwind CSS 4.3.4；布局和主题使用 Tailwind 工具类及 shadcn tokens。代码查看器使用只读 CodeMirror。
 
-安装：先运行 `codex plugin marketplace add /Users/i104/VisualFiles`，再运行 `codex plugin add visualfiles@visualfiles-local`。本机已完成安装。
+### 配置 `.mcp.json`
+
+仓库中的 `.mcp.json` 包含开发机的绝对路径。在其他电脑使用时，先修改根目录 `.mcp.json` 中 `mcpServers.visualfiles` 下的以下配置：
+
+| 配置项 | 用途 | 如何配置 |
+| --- | --- | --- |
+| `command` | 启动 MCP 服务的 Node.js 可执行文件 | 必须指向本机可用的 Node.js；运行 `node -p 'process.execPath'` 获取绝对路径。使用 nvm 时，切换或移除 Node.js 版本后需重新核对。 |
+| `env.VISUALFILES_CODEX` | 启动 Codex 项目服务，读取已登记项目列表 | 填写本机 `codex` 可执行文件的绝对路径，可通过 `command -v codex` 查找，或使用客户端内置的可执行文件。仓库中使用的应用安装位置不一定适用于其他电脑。 |
+| `env.VISUALFILES_RG` | 执行文件名和全文搜索 | 填写本机 ripgrep（`rg`）可执行文件的绝对路径，可通过 `command -v rg` 查找，或使用客户端内置的可执行文件。 |
+
+配置示例（将三个 `/absolute/path/to/...` 替换为本机实际路径）：
+
+```json
+{
+  "mcpServers": {
+    "visualfiles": {
+      "command": "/absolute/path/to/node",
+      "args": ["dist/server.mjs"],
+      "cwd": ".",
+      "env": {
+        "VISUALFILES_CODEX": "/absolute/path/to/codex",
+        "VISUALFILES_RG": "/absolute/path/to/rg"
+      }
+    }
+  }
+}
+```
+
+如果插件进程的 `PATH` 中已经能找到 `codex` 或 `rg`，可以删除对应的环境变量配置；代码会分别使用 `codex`、`rg`。终端中能找到命令不代表桌面客户端启动的插件也能找到，使用绝对路径更直接。已配置的路径失效时不会自动回退到 `PATH`。
+
+`args` 中的 `dist/server.mjs` 和 `cwd` 的 `.` 相对插件目录解析，通常无需修改；当前客户端不展开该位置的 `${PLUGIN_ROOT}`。
+
+### 打包与安装
+
+完成配置后运行 `npm run package`。打包脚本会将根目录 `.mcp.json` 复制到 `release/.mcp.json`，因此修改配置后需要重新打包。
+
+安装：先运行 `codex plugin marketplace add /absolute/path/to/VisualFiles`（替换为本机项目根目录），再运行 `codex plugin add visualfiles@visualfiles-local`。
 
 先运行构建和打包，再安装本地插件。插件更新后，已有聊天可能继续使用旧 MCP 连接；需要重新加载插件或重启 Codex，然后输入“打开文件树”。
 
@@ -45,6 +83,6 @@ UI 使用 shadcn CLI 4.23.0 生成的 Base Nova 组件与 Tailwind CSS 4.3.4；�
 
 ## 运行说明
 
-单个文件预览上限 12 MB，超出时显示大小并提供复制路径；二进制文件显示元信息。搜索需要本机 ripgrep，当前安装包已配置应用内置的 rg 路径。
+单个文件预览上限 12 MB，超出时显示大小并提供复制路径；二进制文件显示元信息。搜索需要本机 ripgrep，路径配置见上文。
 
-兼容性清单里的 `.mcp.json` 使用相对插件目录的路径；当前客户端不展开该位置的 `${PLUGIN_ROOT}`。MCP 连接名为 `visualfiles`，面板资源为 `ui://visualfiles/panel.html`，浏览记录保存在用户数据目录 `VisualFiles` 下。名称迁移后需要重新加载插件或重启 Codex，使聊天使用新的插件与工具标识。
+MCP 连接名为 `visualfiles`，面板资源为 `ui://visualfiles/panel.html`，浏览记录保存在用户数据目录 `VisualFiles` 下。名称迁移后需要重新加载插件或重启 Codex，使聊天使用新的插件与工具标识。

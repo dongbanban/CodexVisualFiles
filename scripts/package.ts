@@ -1,10 +1,9 @@
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 
 await rm("release", { recursive: true, force: true });
 await mkdir("release", { recursive: true });
 for (const path of [
   ".codex-plugin",
-  ".mcp.json",
   "dist",
   "skills",
   "AGENTS.md",
@@ -14,3 +13,21 @@ for (const path of [
 ]) {
   await cp(path, `release/${path}`, { recursive: true });
 }
+await mkdir("release/scripts", { recursive: true });
+await cp("scripts/start.sh", "release/scripts/start.sh");
+await writeFile(
+  "release/.mcp.json",
+  JSON.stringify(
+    {
+      mcpServers: {
+        visualfiles: {
+          command: "/bin/sh",
+          args: ["scripts/start.sh"],
+          cwd: ".",
+        },
+      },
+    },
+    null,
+    2,
+  ) + "\n",
+);

@@ -38,4 +38,8 @@ test("line limit includes new files and preserves generated and deleted exceptio
   execFileSync("git", ["add", "deleted.ts"], { cwd: directory });
   await rm(join(directory, "deleted.ts"));
   assert.equal(check().status, 0);
+  await mkdir(join(directory, "release"));
+  await writeFile(join(directory, "release", "server.js"), "a\n".repeat(501));
+  execFileSync("git", ["add", "release"], { cwd: directory });
+  assert.equal(check().status, 0);
 });

@@ -1,61 +1,133 @@
 # VisualFiles
 
-在 Codex 独立面板查看已登记的本机 Codex 项目。当前版本 0.7.2，适用于 macOS。
+在 Codex 独立面板中浏览本机项目、查看代码与 Git Diff，并把文件或选中代码添加到对话草稿。当前版本 **0.7.3**，支持 macOS（Apple Silicon / Intel）。
 
-产品、UI 交互与插件市场分发的评审和建议见 [REVIEW.md](docs/REVIEW.md)。
+## 功能
 
-## 使用方式
+- 文件树、文件名与全文搜索，自动同步文件变化。
+- 只读代码高亮、文件内查找、Markdown 和图片预览。
+- 有改动的文件自动显示 HEAD 与当前磁盘内容的左右对比。
+- 新建空文件/目录、复制、剪切、移动、重命名；删除进入系统废纸篓。
+- 将文件、目录或选中代码添加到当前或新对话草稿，不自动发送。
+- 拖动左右分隔线调整宽度，按项目记住布局与阅读位置。
 
-- 本地 marketplace：`visualfiles-local`。
-- 根目录与显示名称为 `VisualFiles`；npm 包、插件及 MCP 标识使用小写 `visualfiles`，安装 ID 为 `visualfiles@visualfiles-local`。
-- 原生入口：在 Codex 的插件入口中选择 VisualFiles；插件同时声明全局快捷操作“打开项目文件树”和对话内入口，直接运行插件代码，不需要 Agent 或 Skill。具体位置由 Codex 版本决定。
-- 只能打开 Codex 已创建并关联本机目录的项目。手动入口和“打开项目”均只提供已登记项目及其源目录列表；未关联本机目录的项目不可打开。没有项目时需先在 Codex 中创建项目，列表读取失败时可刷新重试。
-- 后端校验项目身份及目录归属，拒绝未登记目录；已登记项目的受管理 Git worktree 仍可由当前聊天的实际工作目录打开，并绑定工作树自身路径。
-- 也可在选择实际工作目录的聊天中说“打开文件树”，由 `open_visualfiles` 打开当前目录。
-- 文件树仅在用户手动打开时展示。
-- 文件树按需展开，隐藏目录正常显示，Git 忽略项目置灰。
-- 普通文件使用单面板，选择其他文件时直接替换。有改动的文件自动左右对照 HEAD 与当前磁盘内容；切换文件后重新按此规则展示。旧浏览状态自动转换。规则见 [PLAN.md](PLAN.md)。
-- 只读代码查看、语法高亮、行号、文件内查找、Markdown 和图片预览。
-- 顶栏合并展示打开项目按钮、项目名、目录路径与分支；文件树操作按钮和滚动条保留 8px 间隔。
-- 拖动文件树与内容区之间的分隔线可调整左右宽度；文件树最小 240px，内容区最小 320px。宽度在拖拽结束后保存，重新打开时恢复；窗口过窄时可横向滚动。
-- 文件内导航：Alt+左/右箭头后退/前进。F12、⌘/Ctrl+点击或“转到定义”按钮在 JavaScript/TypeScript（含 JSX、TSX、CJS、MJS、CTS、MTS）中定位同文件内的声明，导入符号定位本文件导入声明。不提供跨文件、跨项目或其他语言的语义定义解析。HEAD 与当前磁盘版本分别解析，文件内容更新后拒绝使用过期结果。搜索结果点击后自动定位到匹配行。
-- 查看器配置了 143 个语法高亮语言/格式模式（包括配置、标记与模板格式），按文件名识别。其他普通文本仍可只读显示；预览上限仍为 12 MB。
-- 文件名、目录名和路径匹配区分大小写，文件名与全文搜索同样区分大小写。支持仅变更大小写的重命名；文件系统本身不区分大小写时，无法同时创建只有大小写不同的两个文件。搜索默认跳过忽略文件，可手动纳入；最多展示 500 项结果。
-- 每 2 秒自动同步当前展开目录和查看文件，保留布局与阅读位置。
-- 新建空文件/目录、重命名、菜单移动、拖拽移动；右键支持复制、剪切、粘贴，目录递归包含全部子目录和文件。复制重名时创建“副本”，剪切重名时报错保留源文件。
-- 在面板内复制或剪切后，可在目标目录或目标目录内的文件上右键粘贴。剪切完成前源文件保留。菜单“删除”移到系统废纸篓，仍可找回。
-- 标题栏复制按钮可选择绝对路径或相对路径；普通单面板不展示版本说明。
-- 拖拽仅用于在文件树内移动文件或目录。添加对话引用使用右键菜单或文件标题栏菜单。
-- “添加到对话”菜单提供“添加到当前对话”和“创建新对话”，直接添加文件/目录引用或选中代码到输入框草稿，不填写问题、不自动发送。文件和目录的右键菜单也提供两种目标。
-- 图标按钮有悬停提示；树头部使用纵向折叠图标。手动刷新和自动同步期间刷新图标都会旋转，手动刷新另有“刷新中…”提示。自动同步文案为“自动同步 · 每 2 秒”。消息提示显示 3 秒后自动消失。
-- 浏览状态按工作目录分别保存在用户数据目录，手动重新打开时恢复。文件内容不提供编辑和保存。
+仅打开 Codex 已登记的本机项目及其受管理 worktree。单文件预览上限 12 MB；定义跳转仅支持 JS/TS 的同文件声明，文件内容不支持编辑保存。
 
-## 安装与本机配置
+## 安装
 
-安装依赖、类型及行数检查、回归测试和构建：`npm ci`、`npm run check`、`npm test`、`npm run build`。
+采用与 [ponytail](https://github.com/DietrichGebert/ponytail/blob/main/i18n/README.zh-CN.md#安装) 相同的 GitHub 自定义 marketplace 方式。它是仓库分发源，安装后出现在本机插件列表中；官方公开目录上架是另一条流程。[Codex marketplace 官方说明](https://developers.openai.com/plugins/build/plugins)
 
-UI 使用 shadcn CLI 4.23.0 生成的 Base Nova 组件与 Tailwind CSS 4.3.4；布局和主题使用 Tailwind 工具类及 shadcn tokens。代码查看器使用只读 CodeMirror。
+### 1. 准备环境
 
-### 配置 `.mcp.json`
+需要：
 
-仓库中的 `.mcp.json` 包含开发机的绝对路径。在其他电脑使用时，先修改根目录 `.mcp.json` 中 `mcpServers.visualfiles` 下的以下配置：
+- 支持本机执行的 Codex 桌面客户端，并已创建至少一个关联本机目录的项目。
+- **Node.js 22 或更高版本**，可从 [Node.js 官网](https://nodejs.org/en/download) 安装；启动脚本支持 PATH、Homebrew 和默认 nvm 安装位置。
+- Git，以及支持 `codex plugin` 命令的 Codex CLI。
+- ripgrep（`rg`）用于搜索；可使用客户端自带版本，也可自行安装并加入 PATH。
 
-| 配置项 | 用途 | 如何配置 |
-| --- | --- | --- |
-| `command` | 启动 MCP 服务的 Node.js 可执行文件 | 必须指向本机可用的 Node.js；运行 `node -p 'process.execPath'` 获取绝对路径。使用 nvm 时，切换或移除 Node.js 版本后需重新核对。 |
-| `env.VISUALFILES_CODEX` | 启动 Codex 项目服务，读取已登记项目列表 | 填写本机 `codex` 可执行文件的绝对路径，可通过 `command -v codex` 查找，或使用客户端内置的可执行文件。仓库中使用的应用安装位置不一定适用于其他电脑。 |
-| `env.VISUALFILES_RG` | 执行文件名和全文搜索 | 填写本机 ripgrep（`rg`）可执行文件的绝对路径，可通过 `command -v rg` 查找，或使用客户端内置的可执行文件。 |
+在终端检查：
 
-配置示例（将三个 `/absolute/path/to/...` 替换为本机实际路径）：
+```bash
+node --version
+git --version
+codex plugin --help
+```
+
+如果没有 Codex CLI，或 CLI 没有 `plugin` 子命令，在安装 Node.js 后执行：
+
+```bash
+npm install -g @openai/codex@latest
+```
+
+已有本地路径安装的用户，先按下方“从旧本地安装迁移”处理。
+
+### 2. 添加市场并安装
+
+在终端执行：
+
+```bash
+codex plugin marketplace add dongbanban/CodexVisualFiles
+codex plugin add visualfiles@visualfiles-local
+```
+
+`visualfiles-local` 是市场的固定标识，`visualfiles` 是插件标识。仓库的 `release/` 已包含编译后的服务、界面和启动脚本；普通用户无需克隆仓库、运行 npm 构建或修改开发机路径。
+
+### 3. 重启并打开
+
+1. 重新启动 Codex 桌面客户端，打开或新建本机项目聊天。
+2. 在插件入口选择 VisualFiles，或在聊天中输入“打开文件树”。
+3. 选择已登记项目，点击左侧文件即可查看。Markdown 文件可用标题栏的眼睛图标切换源码和预览。
+
+可执行下列命令查看安装信息：
+
+```bash
+codex plugin list --marketplace visualfiles-local --json
+```
+
+安装过程不需要配置生命周期 hooks。已有聊天可能保留旧 MCP 连接，更新后建议使用新聊天验证。
+
+## 更新
+
+先刷新 GitHub 市场，再重装插件缓存：
+
+```bash
+codex plugin marketplace upgrade visualfiles-local
+codex plugin remove visualfiles@visualfiles-local
+codex plugin add visualfiles@visualfiles-local
+```
+
+完成后重启客户端并打开新聊天。重装不操作项目目录；直接修改插件缓存中的自定义配置会被新安装包覆盖。
+
+### 从旧本地安装迁移
+
+若之前用 `codex plugin marketplace add /本机路径/VisualFiles` 安装过，先移除旧安装与市场，再使用 GitHub 源：
+
+```bash
+codex plugin remove visualfiles@visualfiles-local
+codex plugin marketplace remove visualfiles-local
+codex plugin marketplace add dongbanban/CodexVisualFiles
+codex plugin add visualfiles@visualfiles-local
+```
+
+如果命令仍选中源码目录内的同名市场，离开 VisualFiles 源码目录后重试。随后重启客户端。
+
+## 卸载
+
+```bash
+codex plugin remove visualfiles@visualfiles-local
+codex plugin marketplace remove visualfiles-local
+```
+
+这些命令移除插件和市场来源，不删除你的项目文件。
+
+## 源码安装与自定义路径
+
+适合修改代码，或需要指定非标准工具路径的用户。与 GitHub 安装二选一；切换前按迁移说明移除同名旧市场。
+
+```bash
+git clone https://github.com/dongbanban/CodexVisualFiles.git
+cd CodexVisualFiles
+npm ci
+npm run check
+npm test
+npm run build
+npm run package
+```
+
+默认发布配置使用 `/bin/sh` 运行 `scripts/start.sh`：Node 按 PATH、Homebrew、默认 nvm 位置查找；Codex 优先使用受支持的客户端内置程序，随后使用 PATH；rg 优先使用 PATH，找不到时尝试客户端内置程序。
+
+通常无需修改配置。工具安装在其他位置时，在**打包后、安装前**编辑 `release/.mcp.json`，按需加入以下环境变量，值替换为本机实际绝对路径：
 
 ```json
 {
   "mcpServers": {
     "visualfiles": {
-      "command": "/absolute/path/to/node",
-      "args": ["dist/server.mjs"],
+      "command": "/bin/sh",
+      "args": ["scripts/start.sh"],
       "cwd": ".",
       "env": {
+        "VISUALFILES_NODE": "/absolute/path/to/node",
         "VISUALFILES_CODEX": "/absolute/path/to/codex",
         "VISUALFILES_RG": "/absolute/path/to/rg"
       }
@@ -64,28 +136,32 @@ UI 使用 shadcn CLI 4.23.0 生成的 Base Nova 组件与 Tailwind CSS 4.3.4；�
 }
 ```
 
-如果插件进程的 `PATH` 中已经能找到 `codex` 或 `rg`，可以删除对应的环境变量配置；代码会分别使用 `codex`、`rg`。终端中能找到命令不代表桌面客户端启动的插件也能找到，使用绝对路径更直接。已配置的路径失效时不会自动回退到 `PATH`。
+`VISUALFILES_NODE` 必须指向 Node.js 22+；配置了无效的自定义路径时，应修正或删除该配置。只需填写需要覆盖的变量。`args` 和 `cwd` 相对插件目录，通常保持示例值，不依赖 `${PLUGIN_ROOT}` 展开。
 
-`args` 中的 `dist/server.mjs` 和 `cwd` 的 `.` 相对插件目录解析，通常无需修改；当前客户端不展开该位置的 `${PLUGIN_ROOT}`。
+根目录 `.mcp.json` 保留本机开发配置，打包时不会复制它。每次 `npm run package` 都会重新生成 `release/.mcp.json`；自定义路径仅作本机配置，不要提交到分发仓库。
 
-### 打包与安装
+最后，在源码根目录执行：
 
-完成配置后运行 `npm run package`。打包脚本会将根目录 `.mcp.json` 复制到 `release/.mcp.json`，因此修改配置后需要重新打包。
+```bash
+codex plugin marketplace add "$PWD"
+codex plugin add visualfiles@visualfiles-local
+```
 
-安装：先运行 `codex plugin marketplace add /absolute/path/to/VisualFiles`（替换为本机项目根目录），再运行 `codex plugin add visualfiles@visualfiles-local`。
+重启客户端后使用。修改代码后的本地更新流程是重新构建、打包，再重装插件；保持本地市场时跳过 Git 市场的 `upgrade` 步骤。
 
-先运行构建和打包，再安装本地插件。插件更新后，已有聊天可能继续使用旧 MCP 连接；需要重新加载插件或重启 Codex，然后输入“打开文件树”。
+## 常见问题
 
-代码实施规范见 [AGENTS.md](AGENTS.md)。人工维护的文件不超过 500 行，`npm run check` 同时检查已跟踪和新增文件；依赖锁文件及构建产物按生成内容管理。交付保留生产源码、自动检查、构建脚本、插件清单和使用文档，临时验收页面与产物不入库。
+| 问题 | 处理方式 |
+| --- | --- |
+| `codex: command not found` 或没有 `plugin` 子命令 | 安装或更新 Codex CLI，重新打开终端并检查 `codex plugin --help`。 |
+| 提示缺少 Node.js | 安装 Node.js 22+ 后重启客户端；特殊安装位置使用源码安装并配置 `VISUALFILES_NODE`。 |
+| 项目列表为空或读取失败 | 先在 Codex 创建项目并关联本机目录；更新客户端后刷新重试。项目列表使用实验性 `project/list`，客户端版本需要兼容该接口。 |
+| 搜索提示缺少 ripgrep | 安装 `rg` 并加入 PATH，或通过源码安装配置 `VISUALFILES_RG`；重新加载插件。 |
+| 安装后没有入口、仍显示旧界面或旧错误 | 检查市场来源和安装版本，按更新流程重装，重启客户端并开启新聊天。 |
+| 能查看文件，但添加引用不可用 | 该能力需要客户端支持消息草稿接口；更新客户端后重试。 |
 
-对话引用通过官方 MCP 消息草稿接口添加为插件上下文；文件/目录发送路径引用，选中代码或 HEAD 版本发送对应文本。当前公开 SDK 没有将本地路径直接加入原生 `@` 文件附件或发起原生文件拖拽的接口，已移除向聊天框导出 HTML、文本及文件 URI 的模拟拖拽实现。ChatGPT 的可选上传及文件库接口不等同于本地文件引用。参见 [插件扩展](https://developers.openai.com/plugins/build/extensions) 与 [文件 API](https://developers.openai.com/plugins/reference#file-apis)。
+## 维护说明
 
-项目列表通过本机 Codex app-server 的实验性 project/list 接口读取，不写入 Codex 的偏好文件。此接口可能随客户端版本变化。已移除系统目录选择入口、接口及原生选择器，不提供任意目录打开功能。
+`release/` 是供 GitHub marketplace 直接安装的生成产物，随源码一起提交。维护者修改运行代码、启动脚本或包内文档后，应运行检查、测试、构建和打包，并一并提交更新后的 `release/`。发布版本需同步 `package.json`、锁文件、插件清单和 `src/shared.ts`。
 
-选择项目仅用于切换 VisualFiles 的文件树。真实客户端的入口位置和创建新对话仍需客户端验收；协议验证不代表这些宿主行为已验证。验证过程不向真实聊天发送消息。
-
-## 运行说明
-
-单个文件预览上限 12 MB，超出时显示大小并提供复制路径；二进制文件显示元信息。搜索需要本机 ripgrep，路径配置见上文。
-
-MCP 连接名为 `visualfiles`，面板资源为 `ui://visualfiles/panel.html`，浏览记录保存在用户数据目录 `VisualFiles` 下。名称迁移后需要重新加载插件或重启 Codex，使聊天使用新的插件与工具标识。
+代码规范见 [AGENTS.md](AGENTS.md)，详细行为约定见 [PLAN.md](PLAN.md)，产品、交互与官方目录发布评审见 [REVIEW.md](docs/REVIEW.md)。

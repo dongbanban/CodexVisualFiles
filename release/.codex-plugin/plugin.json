@@ -1,0 +1,15 @@
+{
+  "name": "visualfiles",
+  "version": "0.7.3",
+  "description": "VisualFiles: browse registered local Codex projects with read-only diffs, file navigation, and conversation reference drafts.",
+  "author": {
+    "name": "Local"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "requires_local_executor": true,
+  "interface": {
+    "displayName": "VisualFiles",
+    "shortDescription": "文件浏览、双栏 Diff 与文件管理"
+  }
+}

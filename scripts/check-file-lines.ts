@@ -4,6 +4,7 @@ import { extname } from "node:path";
 
 const limit = 500;
 const generatedFiles = new Set(["package-lock.json"]);
+const generatedDirectories = ["node_modules/", "dist/", "release/"];
 const textExtensions = new Set([
   ".ts",
   ".tsx",
@@ -17,6 +18,7 @@ const textExtensions = new Set([
   ".yaml",
   ".yml",
   ".svg",
+  ".sh",
 ]);
 const paths = new Set(
   execFileSync("git", [
@@ -34,7 +36,12 @@ const violations: string[] = [];
 let checked = 0;
 
 for (const path of paths) {
-  if (generatedFiles.has(path) || !textExtensions.has(extname(path))) continue;
+  if (
+    generatedFiles.has(path) ||
+    generatedDirectories.some((directory) => path.startsWith(directory)) ||
+    !textExtensions.has(extname(path))
+  )
+    continue;
   let text: string;
   try {
     text = await readFile(path, "utf8");

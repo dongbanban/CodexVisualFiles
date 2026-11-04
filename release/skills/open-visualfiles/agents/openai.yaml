@@ -1,0 +1,4 @@
+interface:
+  display_name: "打开 VisualFiles"
+  short_description: "在 Codex 独立面板浏览本地项目文件、查看 Diff，并复制、剪切和粘贴文件或目录"
+  default_prompt: "使用 $open-visualfiles 打开当前工作目录的 VisualFiles 面板。"

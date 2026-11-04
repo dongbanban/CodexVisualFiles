@@ -378,6 +378,7 @@ export function CodeView(props: Props) {
         ref={host}
         className={cn(
           "min-h-0 min-w-0 flex-1 [&_.cm-content]:font-mono [&_.cm-content]:text-xs",
+          "[&_.cm-search_label]:inline-flex [&_.cm-search_label]:items-center [&_.cm-search_label]:align-middle",
           props.diff
             ? "[&_.cm-mergeView]:h-full [&_.cm-mergeView]:overflow-auto [&_.cm-mergeViewEditors]:min-h-full [&_.cm-editor]:h-auto [&_.cm-editor]:min-h-full [&_.cm-scroller]:overflow-visible"
             : "grid [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto",

@@ -1,0 +1,20 @@
+{
+  "name": "visualfiles-local",
+  "interface": {
+    "displayName": "VisualFiles"
+  },
+  "plugins": [
+    {
+      "name": "visualfiles",
+      "source": {
+        "source": "local",
+        "path": "./release"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

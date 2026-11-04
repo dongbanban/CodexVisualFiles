@@ -46,6 +46,23 @@ test("marketplace package includes portable launch configuration and matching ve
   ]) {
     assert.ok((await readFile(join(directory, path))).length > 0);
   }
+  const ignored = spawnSync(
+    "git",
+    [
+      "check-ignore",
+      "--no-index",
+      "--",
+      join(directory, "dist/server.mjs"),
+      join(directory, "dist/index.html"),
+      join(directory, "dist/macos-trash"),
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(
+    ignored.status,
+    1,
+    `Runtime artifacts must be available to Git:\n${ignored.stdout}`,
+  );
   assert.notEqual(
     (await stat(join(directory, "dist/macos-trash"))).mode & 0o111,
     0,

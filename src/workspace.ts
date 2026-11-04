@@ -1,3 +1,5 @@
+import { MAX_PREVIEW_BYTES, fileVersion, missing } from "./file-version.js";
+import { searchWorkspace } from "./workspace-search.js";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -27,37 +29,21 @@ import { createHash, randomUUID } from "node:crypto";
 import {
   emptyState,
   type FileData,
-  type FileVersion,
   type GitEntry,
   type SavedState,
-  type SearchResult,
   type Snapshot,
   type TreeEntry,
   type WorkspaceInfo,
 } from "./shared.js";
 
 const exec = promisify(execFile);
-const MAX_PREVIEW_BYTES = 12 * 1024 * 1024;
+
 const filenameOrder = new Intl.Collator("en", {
   numeric: true,
   sensitivity: "variant",
   caseFirst: "upper",
 });
-const imageTypes: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-};
-const missing = (): FileVersion => ({
-  exists: false,
-  text: "",
-  binary: false,
-  size: 0,
-});
+
 const inside = (root: string, path: string) => {
   const rel = relative(root, path);
   return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
@@ -307,41 +293,7 @@ export class Workspace {
         (a.name === b.name ? 0 : a.name < b.name ? -1 : 1),
     );
   }
-  private version(data: Buffer | null, path: string): FileVersion {
-    if (!data) return missing();
-    if (data.length > MAX_PREVIEW_BYTES)
-      return {
-        exists: true,
-        text: "",
-        binary: true,
-        size: data.length,
-        tooLarge: true,
-      };
-    const mime = imageTypes[extname(path).toLowerCase()];
-    if (mime)
-      return {
-        exists: true,
-        text: "",
-        image: `data:${mime};base64,${data.toString("base64")}`,
-        binary: true,
-        size: data.length,
-      };
-    const binary = data.subarray(0, 8192).includes(0);
-    const text = binary ? "" : data.toString("utf8");
-    return {
-      exists: true,
-      text,
-      ...(binary
-        ? {}
-        : {
-            revision: createHash("sha256")
-              .update(text.replace(/\r\n?/g, "\n"))
-              .digest("hex"),
-          }),
-      binary,
-      size: data.length,
-    };
-  }
+
   async file(path: string): Promise<FileData> {
     let current: Buffer | null = null;
     let currentVersion = missing();
@@ -360,7 +312,7 @@ export class Workspace {
         };
       else {
         current = await readFile(target);
-        currentVersion = this.version(current, path);
+        currentVersion = fileVersion(current, path);
       }
     } catch (error) {
       if (errorCode(error) !== "ENOENT") throw error;
@@ -384,7 +336,7 @@ export class Workspace {
         };
       else if (size >= 0) {
         head = await this.git(["show", object]).catch(() => null);
-        headVersion = this.version(head, path);
+        headVersion = fileVersion(head, path);
       }
     }
     return {
@@ -436,81 +388,7 @@ export class Workspace {
     return { absolutePath, directory: info.isDirectory() };
   }
   async search(query: string, mode: "name" | "text", includeIgnored: boolean) {
-    if (!query.trim())
-      return { results: [] as SearchResult[], truncated: false };
-    const args =
-      mode === "name"
-        ? ["--files", "-0", "--hidden"]
-        : [
-            "--json",
-            "--line-number",
-            "--fixed-strings",
-            "--hidden",
-            "--max-columns",
-            "500",
-            "--max-columns-preview",
-            "--",
-            query,
-            ".",
-          ];
-    if (includeIgnored) args.unshift("--no-ignore");
-    args.unshift("--glob", "!.git/**");
-    args.unshift("--case-sensitive");
-    const executable = process.env.VISUALFILES_RG ?? "rg";
-    return new Promise<{ results: SearchResult[]; truncated: boolean }>(
-      (resolvePromise, reject) => {
-        const child = spawn(executable, args, {
-          cwd: this.root,
-          stdio: ["ignore", "pipe", "pipe"],
-        });
-        const results: SearchResult[] = [];
-        let buffer = "";
-        let error = "";
-        let truncated = false;
-        const separator = mode === "name" ? "\0" : "\n";
-        child.stdout.setEncoding("utf8");
-        child.on("error", () =>
-          reject(new Error("全文和文件名搜索需要本机安装 ripgrep（rg）")),
-        );
-        child.stdout.on("data", (chunk) => {
-          if (truncated) return;
-          buffer += chunk.toString();
-          let end: number;
-          while ((end = buffer.indexOf(separator)) !== -1) {
-            const record = buffer.slice(0, end);
-            buffer = buffer.slice(end + separator.length);
-            if (mode === "name") {
-              if (record.includes(query))
-                results.push({ path: record.replace(/^\.\//, "") });
-            } else {
-              const item = JSON.parse(record);
-              if (
-                item.type === "match" &&
-                typeof item.data.path.text === "string"
-              )
-                results.push({
-                  path: item.data.path.text.replace(/^\.\//, ""),
-                  line: item.data.line_number,
-                  text: String(item.data.lines.text ?? "").trimEnd(),
-                });
-            }
-            if (results.length >= 500) {
-              truncated = true;
-              child.kill();
-              break;
-            }
-          }
-        });
-        child.stderr.on("data", (chunk) => {
-          error += chunk;
-        });
-        child.on("close", (code) =>
-          code === 0 || code === 1 || truncated
-            ? resolvePromise({ results, truncated })
-            : reject(new Error(error || "搜索失败")),
-        );
-      },
-    );
+    return searchWorkspace(this.root, query, mode, includeIgnored);
   }
   async mutate(
     action: "createFile" | "createDirectory" | "move" | "copy" | "trash",

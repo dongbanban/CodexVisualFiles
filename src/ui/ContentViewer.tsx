@@ -1,0 +1,262 @@
+import { useState } from "react";
+import {
+  FolderOpen,
+  FileCode2,
+  X,
+  Copy,
+  MessageSquare,
+  Columns2,
+  Eye,
+} from "lucide-react";
+import { emptyViewer, type FileVersion } from "../shared.js";
+import { CodeView } from "./CodeView.js";
+import { Button } from "./components/ui/button.js";
+import { Badge } from "./components/ui/badge.js";
+import { cn } from "cn";
+import { IconButton, ActionDropdown } from "./chrome.js";
+import type { WorkspaceModel } from "./useWorkspace.js";
+import type { FileActions } from "./useFileActions.js";
+import { base, markdown, textVersion } from "./file-utils.js";
+import { FilePreview } from "./FilePreview.js";
+
+export function ContentViewer({
+  workspace,
+  actions,
+  dark,
+}: {
+  workspace: WorkspaceModel;
+  actions: FileActions;
+  dark: boolean;
+}) {
+  const {
+    binding,
+    stored,
+    setStored,
+    snapshot,
+    reading,
+    line,
+    selection,
+    open,
+    onScroll,
+    findDefinition,
+  } = workspace;
+  const { busy, pathActions, conversationActions } = actions;
+  const [previews, setPreviews] = useState<Record<string, boolean>>({});
+  const slots = stored.viewer.slots;
+  const versions = slots.map((slot) =>
+    textVersion(slot ? snapshot.files[slot.path] : undefined, slot),
+  ) as [FileVersion | null, FileVersion | null];
+  const plainText = slots.every(
+    (slot, index) =>
+      !slot ||
+      (!!versions[index] &&
+        versions[index]!.exists &&
+        !versions[index]!.binary &&
+        !previews[`${slot.path}:${slot.version}`]),
+  );
+  const splitView = stored.viewer.diff && !!slots[0] && !!slots[1];
+  const diff = splitView && plainText;
+  const visibleSlots = splitView ? slots : [slots[0]];
+  const activeSlot = slots[stored.viewer.active];
+
+  return (
+    <main className="flex h-full min-w-0 flex-col">
+      <div
+        className={cn(
+          "grid shrink-0 border-b bg-muted/25",
+          splitView ? "grid-cols-2" : "grid-cols-1",
+        )}
+      >
+        {visibleSlots.map((slot, index) => (
+          <div
+            key={index}
+            className={cn(
+              "flex h-9 min-w-0 items-center gap-1 border-t-2 border-r px-2 last:border-r-0",
+              stored.viewer.active === index
+                ? "border-t-primary bg-background"
+                : "border-t-transparent",
+            )}
+            onClick={() =>
+              setStored((old) => ({
+                ...old,
+                viewer: { ...old.viewer, active: index as 0 | 1 },
+              }))
+            }
+          >
+            {slot ? (
+              <>
+                <FileCode2 className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate" title={slot.path}>
+                  {base(slot.path)}
+                </span>
+                {splitView && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "shrink-0 px-1 text-[9px]",
+                      slot.version === "head"
+                        ? "text-destructive"
+                        : "text-emerald-700 dark:text-emerald-400",
+                    )}
+                  >
+                    {slot.version === "head"
+                      ? "修改前 · HEAD"
+                      : "修改后 · 磁盘"}
+                  </Badge>
+                )}
+                {snapshot.files[slot.path]?.hasDiff && !splitView && (
+                  <IconButton
+                    label="查看 Diff"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      open(slot.path);
+                    }}
+                  >
+                    <Columns2 className="size-3.5" />
+                  </IconButton>
+                )}
+                {markdown(slot.path) && (
+                  <IconButton
+                    label="Markdown 预览"
+                    aria-pressed={!!previews[`${slot.path}:${slot.version}`]}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setPreviews((old) => ({
+                        ...old,
+                        [`${slot.path}:${slot.version}`]:
+                          !old[`${slot.path}:${slot.version}`],
+                      }));
+                    }}
+                  >
+                    <Eye className="size-3.5" />
+                  </IconButton>
+                )}
+                <ActionDropdown
+                  label={`复制 ${slot.path} 的路径`}
+                  Icon={Copy}
+                  actions={pathActions(slot.path)}
+                />
+                <ActionDropdown
+                  label={`添加 ${slot.path} 到对话`}
+                  Icon={MessageSquare}
+                  actions={conversationActions(slot.path, slot)}
+                  disabled={busy}
+                />
+                <IconButton
+                  label="关闭文件"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setStored((old) => ({
+                      ...old,
+                      viewer: emptyViewer(),
+                    }));
+                  }}
+                >
+                  <X className="size-3.5" />
+                </IconButton>
+              </>
+            ) : (
+              <span className="text-muted-foreground">选择文件</span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+        {plainText && slots.some(Boolean) ? (
+          <CodeView
+            dark={dark}
+            slots={slots}
+            versions={versions}
+            diff={diff}
+            single={!splitView}
+            line={line}
+            active={stored.viewer.active}
+            onSelection={(value) => {
+              selection.current = value;
+            }}
+            onScroll={onScroll}
+            onDefinition={findDefinition}
+          />
+        ) : (
+          <div
+            className={cn(
+              "grid h-full",
+              splitView ? "grid-cols-2" : "grid-cols-1",
+            )}
+          >
+            {visibleSlots.map((slot, index) => (
+              <div
+                key={`${slot?.path}:${slot?.version}:${index}`}
+                className="h-full min-w-0 overflow-hidden border-r last:border-r-0"
+              >
+                {!slot ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-muted-foreground">
+                    <FolderOpen className="size-9 opacity-35" />
+                    <p>从文件树选择文件</p>
+                  </div>
+                ) : !versions[index] ? (
+                  <div className="flex h-full items-center justify-center p-6 text-muted-foreground">
+                    {snapshot.errors[slot.path] ?? "正在读取…"}
+                  </div>
+                ) : versions[index]!.binary ||
+                  !versions[index]!.exists ||
+                  previews[`${slot.path}:${slot.version}`] ? (
+                  <FilePreview
+                    slot={slot}
+                    version={versions[index]!}
+                    bindingId={binding.bindingId}
+                    onOpen={open}
+                  />
+                ) : (
+                  <CodeView
+                    dark={dark}
+                    single
+                    slots={[slot, null]}
+                    versions={[versions[index], null]}
+                    diff={false}
+                    onSelection={(value) => {
+                      selection.current = value;
+                    }}
+                    onScroll={(_, top) => onScroll(index, top)}
+                    onDefinition={findDefinition}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <footer className="flex h-7 shrink-0 items-center gap-2 border-t px-3 text-[10px] text-muted-foreground">
+        <span className="min-w-0 truncate" title={activeSlot?.path}>
+          {activeSlot?.path ?? "选择文件开始浏览"}
+        </span>
+        {splitView && (
+          <Button
+            variant="link"
+            size="xs"
+            className="h-auto p-0 text-[10px]"
+            onClick={() =>
+              setStored((old) => ({
+                ...old,
+                viewer: {
+                  ...old.viewer,
+                  slots: [old.viewer.slots[1], null],
+                  active: 0,
+                  diff: false,
+                },
+              }))
+            }
+          >
+            仅查看当前全文
+          </Button>
+        )}
+        <span
+          className="ml-auto shrink-0"
+          title="每 2 秒刷新已展开的目录、Git 状态与当前文件内容"
+        >
+          {busy || reading ? "处理中…" : "自动同步 · 每 2 秒"}
+        </span>
+      </footer>
+    </main>
+  );
+}

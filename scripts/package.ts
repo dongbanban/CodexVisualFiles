@@ -7,6 +7,8 @@ for (const path of [
   ".mcp.json",
   "dist",
   "skills",
+  "AGENTS.md",
+  "docs",
   "README.md",
   "PLAN.md",
 ]) {

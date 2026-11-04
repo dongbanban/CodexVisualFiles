@@ -2,6 +2,8 @@
 
 在 Codex 独立面板查看已登记的本机 Codex 项目。当前版本 0.7.2，适用于 macOS。
 
+产品、UI 交互与插件市场分发的评审和建议见 [REVIEW.md](docs/REVIEW.md)。
+
 ## 使用方式
 
 - 本地 marketplace：`visualfiles-local`。
@@ -30,7 +32,7 @@
 
 ## 安装与本机配置
 
-安装依赖、类型检查和构建：`npm ci`、`npm run check`、`npm run build`。
+安装依赖、类型及行数检查、回归测试和构建：`npm ci`、`npm run check`、`npm test`、`npm run build`。
 
 UI 使用 shadcn CLI 4.23.0 生成的 Base Nova 组件与 Tailwind CSS 4.3.4；布局和主题使用 Tailwind 工具类及 shadcn tokens。代码查看器使用只读 CodeMirror。
 
@@ -74,7 +76,7 @@ UI 使用 shadcn CLI 4.23.0 生成的 Base Nova 组件与 Tailwind CSS 4.3.4；�
 
 先运行构建和打包，再安装本地插件。插件更新后，已有聊天可能继续使用旧 MCP 连接；需要重新加载插件或重启 Codex，然后输入“打开文件树”。
 
-项目自有测试代码、隔离验收页面与验收产物在最终校验后按要求移除。交付保留生产源码、构建脚本、插件清单及使用文档。
+代码实施规范见 [AGENTS.md](AGENTS.md)。人工维护的文件不超过 500 行，`npm run check` 同时检查已跟踪和新增文件；依赖锁文件及构建产物按生成内容管理。交付保留生产源码、自动检查、构建脚本、插件清单和使用文档，临时验收页面与产物不入库。
 
 对话引用通过官方 MCP 消息草稿接口添加为插件上下文；文件/目录发送路径引用，选中代码或 HEAD 版本发送对应文本。当前公开 SDK 没有将本地路径直接加入原生 `@` 文件附件或发起原生文件拖拽的接口，已移除向聊天框导出 HTML、文本及文件 URI 的模拟拖拽实现。ChatGPT 的可选上传及文件库接口不等同于本地文件引用。参见 [插件扩展](https://developers.openai.com/plugins/build/extensions) 与 [文件 API](https://developers.openai.com/plugins/reference#file-apis)。
 

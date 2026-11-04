@@ -8,7 +8,7 @@ export function definitionAt(
 ): DefinitionLocation | null {
   if (!/\.(?:[cm]?[jt]s|[jt]sx)$/i.test(path))
     throw new Error(
-      "定义跳转目前支持 JavaScript / TypeScript（含 JSX、TSX）；此文件可按行号定位",
+      "定义跳转目前仅支持 JavaScript / TypeScript（含 JSX、TSX）中的同文件声明",
     );
   if (!Number.isInteger(position) || position < 0 || position > text.length)
     throw new Error("代码位置已变化，请重新定位后再跳转");

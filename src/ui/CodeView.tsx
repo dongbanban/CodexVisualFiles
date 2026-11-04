@@ -8,7 +8,11 @@ import {
   highlightActiveLineGutter,
 } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
-import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import {
+  gotoLine,
+  searchKeymap,
+  highlightSelectionMatches,
+} from "@codemirror/search";
 import {
   LanguageDescription,
   syntaxHighlighting,
@@ -22,21 +26,10 @@ import {
   ArrowLeft,
   ArrowRight,
   CornerDownRight,
-  MapPin,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { IconButton } from "./chrome.js";
-import { Button } from "./components/ui/button.js";
-import { Input } from "./components/ui/input.js";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "./components/ui/dialog.js";
 import type { Slot, FileVersion, DefinitionLocation } from "../shared.js";
 
 export interface CodeSelection {
@@ -75,8 +68,6 @@ export function CodeView(props: Props) {
     forward: Array<DefinitionLocation & { index: number }>;
   }>({ back: [], forward: [] });
   const [navigation, setNavigation] = useState({ back: false, forward: false });
-  const [lineDialog, setLineDialog] = useState(false);
-  const [lineValue, setLineValue] = useState("");
   const [defining, setDefining] = useState(false);
   const definitionRequest = useRef(0);
   const publishHistory = () =>
@@ -128,33 +119,6 @@ export function CodeView(props: Props) {
     history.current[direction === "back" ? "forward" : "back"].push(previous);
     moveTo(location, false);
     return true;
-  };
-  const openLineDialog = () => {
-    const editor = editors.current[active.current];
-    if (!editor) return false;
-    setLineValue(
-      String(editor.state.doc.lineAt(editor.state.selection.main.head).number),
-    );
-    setLineDialog(true);
-    return true;
-  };
-  const jumpToLine = () => {
-    const editor = editors.current[active.current];
-    const match = /^(\d+)(?::(\d+))?$/.exec(lineValue.trim());
-    const number = Number(match?.[1]);
-    const column = Number(match?.[2] ?? 1);
-    if (!editor || !match || number < 1 || number > editor.state.doc.lines) {
-      toast.error("请输入有效的行号", { duration: 3000 });
-      return;
-    }
-    const target = editor.state.doc.line(number);
-    if (column < 1 || column > target.length + 1) {
-      toast.error("列号超出该行范围", { duration: 3000 });
-      return;
-    }
-    const position = target.from + column - 1;
-    setLineDialog(false);
-    moveTo({ index: active.current, from: position, to: position });
   };
   const jumpToDefinition = async (
     index = active.current,
@@ -227,10 +191,9 @@ export function CodeView(props: Props) {
             return true;
           },
         },
-        { key: "Mod-g", run: openLineDialog },
         { key: "Alt-ArrowLeft", run: () => navigate("back") },
         { key: "Alt-ArrowRight", run: () => navigate("forward") },
-        ...searchKeymap,
+        ...searchKeymap.filter(({ run }) => run !== gotoLine),
         ...defaultKeymap,
       ]),
       EditorView.domEventHandlers({
@@ -396,9 +359,6 @@ export function CodeView(props: Props) {
         >
           <ArrowRight className="size-3.5" />
         </IconButton>
-        <IconButton label="跳转到行（⌘/Ctrl＋G）" onClick={openLineDialog}>
-          <MapPin className="size-3.5" />
-        </IconButton>
         <IconButton
           label="转到定义（F12 或 ⌘/Ctrl＋点击）"
           disabled={defining}
@@ -424,32 +384,6 @@ export function CodeView(props: Props) {
           !props.diff && (props.single ? "grid-cols-1" : "grid-cols-2"),
         )}
       />
-      <Dialog open={lineDialog} onOpenChange={setLineDialog}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>跳转到行</DialogTitle>
-            <DialogDescription>
-              输入行号或“行号:列号”，例如 120:8。
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            autoFocus
-            aria-label="行号或行号:列号"
-            value={lineValue}
-            onFocus={(event) => event.currentTarget.select()}
-            onChange={(event) => setLineValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") jumpToLine();
-            }}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLineDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={jumpToLine}>跳转</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

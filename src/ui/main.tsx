@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { createRoot } from "react-dom/client";
 import ReactMarkdown from "react-markdown";
+import { usePanelRef } from "react-resizable-panels";
 import {
   App as McpApp,
   applyDocumentTheme,
@@ -320,6 +321,7 @@ function Panel({
   const [previews, setPreviews] = useState<Record<string, boolean>>({});
   const [line, setLine] = useState<number>();
   const [sidebar, setSidebar] = useState(true);
+  const treePanel = usePanelRef();
   const stateRef = useRef(stored);
   stateRef.current = stored;
   const filesRef = useRef(snapshot.files);
@@ -1041,7 +1043,7 @@ function Panel({
     trash: "删除",
   };
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-background text-xs text-foreground">
+    <div className="flex h-dvh w-full flex-col overflow-x-auto overflow-y-hidden bg-background text-xs text-foreground">
       <header className="flex h-11 shrink-0 items-center gap-2 border-b px-2">
         <IconButton
           label={sidebar ? "隐藏文件树" : "显示文件树"}
@@ -1104,26 +1106,32 @@ function Panel({
           />
         </IconButton>
       </header>
-      <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
+      <ResizablePanelGroup
+        orientation="horizontal"
+        className={cn(
+          "min-h-0 flex-1",
+          sidebar ? "min-w-[561px]" : "min-w-[320px]",
+        )}
+        onLayoutChanged={(_, { isUserInteraction }) => {
+          if (!isUserInteraction) return;
+          // Read pixels after the library commits keyboard layout changes.
+          queueMicrotask(() => {
+            if (!alive.current || !treePanel.current) return;
+            const width = Math.round(treePanel.current.getSize().inPixels);
+            setStored((old) =>
+              old.treeWidth === width ? old : { ...old, treeWidth: width },
+            );
+          });
+        }}
+      >
         {sidebar && (
           <>
             <ResizablePanel
               id="files"
+              panelRef={treePanel}
               defaultSize={stored.treeWidth}
-              minSize={180}
-              maxSize={600}
-              onResize={(size, _, previous) => {
-                if (previous)
-                  setStored((old) => {
-                    const width = Math.max(
-                      180,
-                      Math.min(600, Math.round(size.inPixels)),
-                    );
-                    return old.treeWidth === width
-                      ? old
-                      : { ...old, treeWidth: width };
-                  });
-              }}
+              minSize={240}
+              groupResizeBehavior="preserve-pixel-size"
             >
               <aside className="flex h-full min-h-0 flex-col bg-muted/25">
                 <div className="relative mx-2 mt-3">
@@ -1321,7 +1329,7 @@ function Panel({
             <ResizableHandle aria-label="调整文件树宽度" withHandle />
           </>
         )}
-        <ResizablePanel id="content" minSize={160}>
+        <ResizablePanel id="content" minSize={320}>
           <main className="flex h-full min-w-0 flex-col">
             <div
               className={cn(

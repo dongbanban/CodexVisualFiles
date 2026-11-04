@@ -38,7 +38,7 @@ const stateSchema = z.object({
   onlyChanged: z.boolean(),
   includeIgnored: z.boolean(),
   searchMode: z.enum(["name", "text"]),
-  treeWidth: z.number().min(180).max(600),
+  treeWidth: z.number().min(180),
 });
 const bindings = new Map<
   string,

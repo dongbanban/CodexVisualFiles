@@ -41,8 +41,12 @@ export function ContentViewer({
     findDefinition,
   } = workspace;
   const { busy, pathActions, conversationActions } = actions;
-  const [previews, setPreviews] = useState<Record<string, boolean>>({});
+  const [sources, setSources] = useState<Record<string, boolean>>({});
   const slots = stored.viewer.slots;
+  const previews = slots.map(
+    (slot) =>
+      !!slot && markdown(slot.path) && !sources[`${slot.path}:${slot.version}`],
+  );
   const versions = slots.map((slot) =>
     textVersion(slot ? snapshot.files[slot.path] : undefined, slot),
   ) as [FileVersion | null, FileVersion | null];
@@ -52,7 +56,7 @@ export function ContentViewer({
       (!!versions[index] &&
         versions[index]!.exists &&
         !versions[index]!.binary &&
-        !previews[`${slot.path}:${slot.version}`]),
+        !previews[index]),
   );
   const splitView = stored.viewer.diff && !!slots[0] && !!slots[1];
   const diff = splitView && plainText;
@@ -117,11 +121,11 @@ export function ContentViewer({
                 )}
                 {markdown(slot.path) && (
                   <IconButton
-                    label="Markdown 预览"
-                    aria-pressed={!!previews[`${slot.path}:${slot.version}`]}
+                    label={previews[index] ? "查看源码" : "Markdown 预览"}
+                    aria-pressed={previews[index]}
                     onClick={(event) => {
                       event.stopPropagation();
-                      setPreviews((old) => ({
+                      setSources((old) => ({
                         ...old,
                         [`${slot.path}:${slot.version}`]:
                           !old[`${slot.path}:${slot.version}`],
@@ -200,7 +204,7 @@ export function ContentViewer({
                   </div>
                 ) : versions[index]!.binary ||
                   !versions[index]!.exists ||
-                  previews[`${slot.path}:${slot.version}`] ? (
+                  previews[index] ? (
                   <FilePreview
                     slot={slot}
                     version={versions[index]!}

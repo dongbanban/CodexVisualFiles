@@ -1,6 +1,6 @@
 {
   "name": "visualfiles",
-  "version": "0.7.6",
+  "version": "0.7.7",
   "description": "VisualFiles: browse registered local Codex projects with read-only diffs, file navigation, and conversation reference drafts.",
   "author": {
     "name": "Local"

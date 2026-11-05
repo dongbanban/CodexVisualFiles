@@ -6,7 +6,6 @@ import {
   RESOURCE_MIME_TYPE,
 } from "@modelcontextprotocol/ext-apps/server";
 import { readFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   VERSION,
@@ -18,6 +17,7 @@ import { Workspace, message } from "./workspace.js";
 import { entrypointDirectory } from "./entrypoint.js";
 import { registeredProjects, projectForDirectory } from "./projects.js";
 import { definitionAt } from "./definition.js";
+import { bindWorkspace, workspaceFor } from "./bindings.js";
 
 const resourceUri = "ui://visualfiles/panel.html";
 const pathSchema = z.string().max(10000);
@@ -40,10 +40,6 @@ const stateSchema = z.object({
   searchMode: z.enum(["name", "text"]),
   treeWidth: z.number().min(180),
 });
-const bindings = new Map<
-  string,
-  { workspace: Workspace; thread: string | undefined }
->();
 const success = (data: object) => ({
   content: [{ type: "text" as const, text: "已完成文件面板操作" }],
   structuredContent: data,
@@ -59,12 +55,6 @@ serveStdio(() => {
     title: "VisualFiles",
     version: VERSION,
   });
-  const workspaceFor = (bindingId: string, thread: unknown) => {
-    const binding = bindings.get(bindingId);
-    if (!binding || (thread && binding.thread && thread !== binding.thread))
-      throw new Error("工作目录绑定已失效，请在当前聊天重新打开文件树");
-    return binding.workspace;
-  };
   registerAppResource(
     server,
     "visualfiles-panel",
@@ -143,11 +133,11 @@ serveStdio(() => {
             context.mcpReq.signal,
           );
           const workspace = await Workspace.bind(selection.root);
-          const bindingId = randomUUID();
-          bindings.set(bindingId, {
+          const bindingId = await bindWorkspace(
             workspace,
-            thread: context.mcpReq._meta?.threadId as string | undefined,
-          });
+            selection.project.id,
+            context.mcpReq._meta?.threadId,
+          );
           const saved = stateSchema.safeParse(await workspace.loadState());
           data = {
             root: workspace.root,
@@ -222,9 +212,10 @@ serveStdio(() => {
     },
     async (args, context) => {
       try {
-        const workspace = workspaceFor(
+        const workspace = await workspaceFor(
           args.bindingId,
           context.mcpReq._meta?.threadId,
+          context.mcpReq.signal,
         );
         if (args.action === "snapshot")
           return success(
@@ -290,10 +281,16 @@ serveStdio(() => {
     },
     async (args, context) => {
       try {
-        const path = await workspaceFor(
+        const workspace = await workspaceFor(
           args.bindingId,
           context.mcpReq._meta?.threadId,
-        ).mutate(args.action, args.path, args.destination);
+          context.mcpReq.signal,
+        );
+        const path = await workspace.mutate(
+          args.action,
+          args.path,
+          args.destination,
+        );
         return success({ ok: true, path: path ?? null });
       } catch (error) {
         return failure(error);
@@ -314,10 +311,12 @@ serveStdio(() => {
     },
     async (args, context) => {
       try {
-        await workspaceFor(
+        const workspace = await workspaceFor(
           args.bindingId,
           context.mcpReq._meta?.threadId,
-        ).saveState(args.state);
+          context.mcpReq.signal,
+        );
+        await workspace.saveState(args.state);
         return success({ ok: true });
       } catch (error) {
         return failure(error);

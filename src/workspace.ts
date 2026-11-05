@@ -24,7 +24,7 @@ import {
   sep,
 } from "node:path";
 import { fileURLToPath } from "node:url";
-import { homedir } from "node:os";
+import { dataDirectory } from "./storage.js";
 import { createHash, randomUUID } from "node:crypto";
 import {
   emptyState,
@@ -57,8 +57,7 @@ export class Workspace {
   private prefix = "";
   constructor(
     readonly root: string,
-    readonly stateDirectory = process.env.PLUGIN_DATA ||
-      join(homedir(), ".local", "share", "VisualFiles"),
+    readonly stateDirectory = dataDirectory(),
   ) {}
   static async bind(root: string) {
     if (!isAbsolute(root)) throw new Error("工作目录必须是绝对路径");

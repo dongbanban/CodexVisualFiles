@@ -1,6 +1,6 @@
 # VisualFiles
 
-在 Codex 独立面板中浏览本机项目、查看代码与 Git Diff，并把文件或选中代码添加到对话草稿。当前版本 **0.7.6**，支持 macOS（Apple Silicon / Intel）。
+在 Codex 独立面板中浏览本机项目、查看代码与 Git Diff，并把文件或选中代码添加到对话草稿。当前版本 **0.7.7**，支持 macOS（Apple Silicon / Intel）。
 
 ## 功能
 
@@ -169,6 +169,7 @@ codex plugin add visualfiles@visualfiles-local
 | `codex: command not found` 或没有 `plugin` 子命令 | 安装或更新 Codex CLI，重新打开终端并检查 `codex plugin --help`。                                                       |
 | 提示缺少 Node.js                                  | 安装 Node.js 22+ 后重启客户端；特殊安装位置使用源码安装并配置 `VISUALFILES_NODE`。                                     |
 | 项目列表为空或读取失败                            | 先在 Codex 创建项目并关联本机目录；更新客户端后刷新重试。项目列表使用实验性 `project/list`，客户端版本需要兼容该接口。 |
+| 提示“工作目录绑定已失效”                         | 更新插件后重新选择一次项目；新版绑定可跨服务进程恢复。若仍失败，确认项目仍在 Codex 登记且原目录存在。                 |
 | 搜索提示缺少 ripgrep                              | 安装 `rg` 并加入 PATH，或通过源码安装配置 `VISUALFILES_RG`；重新加载插件。                                             |
 | 聊天无法打开面板、仍显示旧界面或旧错误            | 检查市场来源和安装版本，按更新流程重装，重启客户端并开启新聊天。                                                       |
 | 左侧「…」仍显示 VisualFiles                       | 按“清除旧的全局入口”重装 0.7.4 或更新版本，完全退出并重启客户端。                                                      |

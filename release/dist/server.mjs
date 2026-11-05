@@ -2301,7 +2301,7 @@ var require_typescript = __commonJS({
         walkUpParenthesizedTypesAndGetParentAndChild: () => walkUpParenthesizedTypesAndGetParentAndChild,
         whitespaceOrMapCommentRegExp: () => whitespaceOrMapCommentRegExp,
         writeCommentRange: () => writeCommentRange,
-        writeFile: () => writeFile2,
+        writeFile: () => writeFile3,
         writeFileEnsuringDirectories: () => writeFileEnsuringDirectories,
         zipWith: () => zipWith
       });
@@ -8633,7 +8633,7 @@ ${lanes.join("\n")}
             writeOutputIsTTY() {
               return process.stdout.isTTY;
             },
-            readFile: readFile3,
+            readFile: readFile4,
             writeFile: writeFile22,
             watchFile: watchFile2,
             watchDirectory,
@@ -8839,7 +8839,7 @@ ${lanes.join("\n")}
               callback
             );
           }
-          function readFile3(fileName, _encoding) {
+          function readFile4(fileName, _encoding) {
             let buffer;
             try {
               buffer = _fs.readFileSync(fileName);
@@ -20944,7 +20944,7 @@ ${lanes.join("\n")}
         sourceFilePath = isSourceFileInCommonSourceDirectory ? sourceFilePath.substring(commonSourceDirectory.length) : sourceFilePath;
         return combinePaths(newDirPath, sourceFilePath);
       }
-      function writeFile2(host, diagnostics, fileName, text, writeByteOrderMark, sourceFiles, data) {
+      function writeFile3(host, diagnostics, fileName, text, writeByteOrderMark, sourceFiles, data) {
         host.writeFile(
           fileName,
           text,
@@ -45395,7 +45395,7 @@ ${lanes.join("\n")}
         const possibleOption = getSpellingSuggestion(unknownOption, diagnostics.optionDeclarations, getOptionName);
         return possibleOption ? createDiagnosticForNodeInSourceFileOrCompilerDiagnostic(sourceFile, node2, diagnostics.unknownDidYouMeanDiagnostic, unknownOptionErrorText || unknownOption, possibleOption.name) : createDiagnosticForNodeInSourceFileOrCompilerDiagnostic(sourceFile, node2, diagnostics.unknownOptionDiagnostic, unknownOptionErrorText || unknownOption);
       }
-      function parseCommandLineWorker(diagnostics, commandLine, readFile3) {
+      function parseCommandLineWorker(diagnostics, commandLine, readFile4) {
         const options = {};
         let watchOptions;
         const fileNames = [];
@@ -45443,7 +45443,7 @@ ${lanes.join("\n")}
           }
         }
         function parseResponseFile(fileName) {
-          const text = tryReadFile(fileName, readFile3 || ((fileName2) => sys.readFile(fileName2)));
+          const text = tryReadFile(fileName, readFile4 || ((fileName2) => sys.readFile(fileName2)));
           if (!isString(text)) {
             errors.push(text);
             return;
@@ -45546,8 +45546,8 @@ ${lanes.join("\n")}
         unknownDidYouMeanDiagnostic: Diagnostics.Unknown_compiler_option_0_Did_you_mean_1,
         optionTypeMismatchDiagnostic: Diagnostics.Compiler_option_0_expects_an_argument
       };
-      function parseCommandLine(commandLine, readFile3) {
-        return parseCommandLineWorker(compilerOptionsDidYouMeanDiagnostics, commandLine, readFile3);
+      function parseCommandLine(commandLine, readFile4) {
+        return parseCommandLineWorker(compilerOptionsDidYouMeanDiagnostics, commandLine, readFile4);
       }
       function getOptionFromName(optionName, allowShort) {
         return getOptionDeclarationFromName(getOptionsNameMap, optionName, allowShort);
@@ -45629,8 +45629,8 @@ ${lanes.join("\n")}
           watchOptionsToExtend
         );
       }
-      function readConfigFile(fileName, readFile3) {
-        const textOrDiagnostic = tryReadFile(fileName, readFile3);
+      function readConfigFile(fileName, readFile4) {
+        const textOrDiagnostic = tryReadFile(fileName, readFile4);
         return isString(textOrDiagnostic) ? parseConfigFileTextToJson(fileName, textOrDiagnostic) : { config: {}, error: textOrDiagnostic };
       }
       function parseConfigFileTextToJson(fileName, jsonText) {
@@ -45645,14 +45645,14 @@ ${lanes.join("\n")}
           error: jsonSourceFile.parseDiagnostics.length ? jsonSourceFile.parseDiagnostics[0] : void 0
         };
       }
-      function readJsonConfigFile(fileName, readFile3) {
-        const textOrDiagnostic = tryReadFile(fileName, readFile3);
+      function readJsonConfigFile(fileName, readFile4) {
+        const textOrDiagnostic = tryReadFile(fileName, readFile4);
         return isString(textOrDiagnostic) ? parseJsonText(fileName, textOrDiagnostic) : { fileName, parseDiagnostics: [textOrDiagnostic] };
       }
-      function tryReadFile(fileName, readFile3) {
+      function tryReadFile(fileName, readFile4) {
         let text;
         try {
-          text = readFile3(fileName);
+          text = readFile4(fileName);
         } catch (e) {
           return createCompilerDiagnostic(Diagnostics.Cannot_read_file_0_Colon_1, fileName, e.message);
         }
@@ -129695,7 +129695,7 @@ ${lanes.join("\n")}
             return;
           }
           const buildInfo = host.getBuildInfo() || { version: version2 };
-          writeFile2(
+          writeFile3(
             host,
             emitterDiagnostics,
             buildInfoPath,
@@ -129907,7 +129907,7 @@ ${lanes.join("\n")}
             }
             if (sourceMapFilePath) {
               const sourceMap = sourceMapGenerator.toString();
-              writeFile2(
+              writeFile3(
                 host,
                 emitterDiagnostics,
                 sourceMapFilePath,
@@ -129922,7 +129922,7 @@ ${lanes.join("\n")}
           }
           const text = writer.getText();
           const data = { sourceMapUrlPos, diagnostics: transform22.diagnostics };
-          writeFile2(host, emitterDiagnostics, jsFilePath, text, !!compilerOptions.emitBOM, sourceFiles, data);
+          writeFile3(host, emitterDiagnostics, jsFilePath, text, !!compilerOptions.emitBOM, sourceFiles, data);
           writer.clear();
           return !data.skippedDtsWrite;
         }
@@ -135310,12 +135310,12 @@ ${lanes.join("\n")}
       function createCompilerHost(options, setParentNodes) {
         return createCompilerHostWorker(options, setParentNodes);
       }
-      function createGetSourceFile(readFile3, setParentNodes) {
+      function createGetSourceFile(readFile4, setParentNodes) {
         return (fileName, languageVersionOrOptions, onError) => {
           let text;
           try {
             mark("beforeIORead");
-            text = readFile3(fileName);
+            text = readFile4(fileName);
             mark("afterIORead");
             measure("I/O Read", "beforeIORead", "afterIORead");
           } catch (e) {
@@ -136219,7 +136219,7 @@ ${lanes.join("\n")}
           getRedirectFromOutput,
           forEachResolvedProjectReference: forEachResolvedProjectReference2
         });
-        const readFile3 = host.readFile.bind(host);
+        const readFile4 = host.readFile.bind(host);
         (_e = tracing) == null ? void 0 : _e.push(tracing.Phase.Program, "shouldProgramCreateNewSourceFiles", { hasOldProgram: !!oldProgram });
         const shouldCreateNewSourceFile = shouldProgramCreateNewSourceFiles(oldProgram, options);
         (_f = tracing) == null ? void 0 : _f.pop();
@@ -136445,7 +136445,7 @@ ${lanes.join("\n")}
           shouldTransformImportCall,
           emitBuildInfo,
           fileExists,
-          readFile: readFile3,
+          readFile: readFile4,
           directoryExists,
           getSymlinkCache,
           realpath: (_o = host.realpath) == null ? void 0 : _o.bind(host),
@@ -197804,7 +197804,7 @@ ${options.prefix}` : "\n" : options.prefix
         walkUpParenthesizedTypesAndGetParentAndChild: () => walkUpParenthesizedTypesAndGetParentAndChild,
         whitespaceOrMapCommentRegExp: () => whitespaceOrMapCommentRegExp,
         writeCommentRange: () => writeCommentRange,
-        writeFile: () => writeFile2,
+        writeFile: () => writeFile3,
         writeFileEnsuringDirectories: () => writeFileEnsuringDirectories,
         zipWith: () => zipWith
       });
@@ -245896,11 +245896,10 @@ function G(B, Q, F, V, q) {
 }
 
 // src/server.ts
-import { readFile as readFile2 } from "node:fs/promises";
-import { randomUUID as randomUUID2 } from "node:crypto";
+import { readFile as readFile3 } from "node:fs/promises";
 
 // src/shared.ts
-var VERSION = "0.7.6";
+var VERSION = "0.7.7";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,
@@ -246070,13 +246069,19 @@ import {
   dirname,
   extname as extname2,
   isAbsolute,
-  join,
+  join as join2,
   relative,
   resolve,
   sep
 } from "node:path";
 import { fileURLToPath } from "node:url";
+
+// src/storage.ts
 import { homedir } from "node:os";
+import { join } from "node:path";
+var dataDirectory = () => process.env.PLUGIN_DATA || join(homedir(), ".local", "share", "VisualFiles");
+
+// src/workspace.ts
 import { createHash as createHash2, randomUUID } from "node:crypto";
 var exec = promisify(execFile);
 var filenameOrder = new Intl.Collator("en", {
@@ -246091,7 +246096,7 @@ var inside = (root, path) => {
 var errorCode = (error62) => error62.code;
 var message = (error62) => error62 instanceof Error ? error62.message : String(error62);
 var Workspace = class _Workspace {
-  constructor(root, stateDirectory = process.env.PLUGIN_DATA || join(homedir(), ".local", "share", "VisualFiles")) {
+  constructor(root, stateDirectory = dataDirectory()) {
     this.root = root;
     this.stateDirectory = stateDirectory;
   }
@@ -246215,7 +246220,7 @@ var Workspace = class _Workspace {
         error62.code = "ENOENT";
         throw error62;
       }
-      current = join(current, name);
+      current = join2(current, name);
     }
     return candidate;
   }
@@ -246416,7 +246421,7 @@ var Workspace = class _Workspace {
         try {
           await lstat(dest);
           number4++;
-          dest = join(
+          dest = join2(
             directory,
             `${stem} \u526F\u672C${number4 > 1 ? ` ${number4}` : ""}${extension}`
           );
@@ -246450,7 +246455,7 @@ var Workspace = class _Workspace {
     return relative(this.root, dest);
   }
   get statePath() {
-    return join(
+    return join2(
       this.stateDirectory,
       `${createHash2("sha256").update(this.root).digest("hex")}.json`
     );
@@ -246505,7 +246510,7 @@ import { spawn as spawn3, execFile as execFile2 } from "node:child_process";
 import { createInterface } from "node:readline";
 import { promisify as promisify2 } from "node:util";
 import { realpath as realpath2, lstat as lstat2 } from "node:fs/promises";
-import { isAbsolute as isAbsolute3, join as join2 } from "node:path";
+import { isAbsolute as isAbsolute3, join as join3 } from "node:path";
 var projectPage = external_exports.object({
   data: external_exports.array(
     external_exports.object({
@@ -246604,7 +246609,7 @@ async function projectForDirectory(path, projects, projectId, signal) {
     }))
   );
   let match = entries.find((entry) => entry.roots.includes(root));
-  if (!match && entries.length && (await lstat2(join2(root, ".git")).catch(() => null))?.isFile()) {
+  if (!match && entries.length && (await lstat2(join3(root, ".git")).catch(() => null))?.isFile()) {
     const worktrees = await promisify2(execFile2)(
       "git",
       ["-C", root, "worktree", "list", "--porcelain", "-z"],
@@ -246670,6 +246675,63 @@ function definitionAt(path, text, position) {
   }
 }
 
+// src/bindings.ts
+import { randomUUID as randomUUID2 } from "node:crypto";
+import { mkdir as mkdir2, readFile as readFile2, writeFile as writeFile2 } from "node:fs/promises";
+import { dirname as dirname2, join as join4 } from "node:path";
+var recordSchema = external_exports.object({
+  root: external_exports.string(),
+  projectId: external_exports.string(),
+  thread: external_exports.string().optional()
+});
+var bindings = /* @__PURE__ */ new Map();
+var expired = () => new Error("\u5DE5\u4F5C\u76EE\u5F55\u7ED1\u5B9A\u5DF2\u5931\u6548\uFF0C\u8BF7\u5728\u5F53\u524D\u804A\u5929\u91CD\u65B0\u6253\u5F00\u6587\u4EF6\u6811");
+var bindingPath = (id) => {
+  if (!external_exports.uuid().safeParse(id).success) throw expired();
+  return join4(dataDirectory(), "bindings", `${id}.json`);
+};
+var checkThread = (bound, current) => {
+  if (bound && current && bound !== current) throw expired();
+};
+async function bindWorkspace(workspace, projectId, thread) {
+  const record2 = recordSchema.parse({
+    root: workspace.root,
+    projectId,
+    thread
+  });
+  const id = randomUUID2();
+  const path = bindingPath(id);
+  await mkdir2(dirname2(path), { recursive: true, mode: 448 });
+  await writeFile2(path, JSON.stringify(record2), { flag: "wx", mode: 384 });
+  bindings.set(id, { workspace, thread: record2.thread });
+  return id;
+}
+async function workspaceFor(id, thread, signal) {
+  let binding = bindings.get(id);
+  if (!binding) {
+    const record2 = await readFile2(bindingPath(id), "utf8").then((text) => recordSchema.parse(JSON.parse(text))).catch((error62) => {
+      const code = error62.code;
+      if (code && code !== "ENOENT") throw error62;
+      throw expired();
+    });
+    checkThread(record2.thread, thread);
+    const selection = await projectForDirectory(
+      record2.root,
+      await registeredProjects(signal),
+      record2.projectId,
+      signal
+    );
+    if (selection.root !== record2.root) throw expired();
+    binding = {
+      workspace: await Workspace.bind(selection.root),
+      thread: record2.thread
+    };
+    bindings.set(id, binding);
+  }
+  checkThread(binding.thread, thread);
+  return binding.workspace;
+}
+
 // src/server.ts
 var resourceUri = "ui://visualfiles/panel.html";
 var pathSchema = external_exports.string().max(1e4);
@@ -246692,7 +246754,6 @@ var stateSchema = external_exports.object({
   searchMode: external_exports.enum(["name", "text"]),
   treeWidth: external_exports.number().min(180)
 });
-var bindings = /* @__PURE__ */ new Map();
 var success2 = (data) => ({
   content: [{ type: "text", text: "\u5DF2\u5B8C\u6210\u6587\u4EF6\u9762\u677F\u64CD\u4F5C" }],
   structuredContent: data
@@ -246707,12 +246768,6 @@ serveStdio(() => {
     title: "VisualFiles",
     version: VERSION
   });
-  const workspaceFor = (bindingId, thread) => {
-    const binding = bindings.get(bindingId);
-    if (!binding || thread && binding.thread && thread !== binding.thread)
-      throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u7ED1\u5B9A\u5DF2\u5931\u6548\uFF0C\u8BF7\u5728\u5F53\u524D\u804A\u5929\u91CD\u65B0\u6253\u5F00\u6587\u4EF6\u6811");
-    return binding.workspace;
-  };
   G(
     server2,
     "visualfiles-panel",
@@ -246723,7 +246778,7 @@ serveStdio(() => {
         {
           uri: resourceUri,
           mimeType: L,
-          text: await readFile2(
+          text: await readFile3(
             new URL("./index.html", import.meta.url),
             "utf8"
           ),
@@ -246784,11 +246839,11 @@ serveStdio(() => {
             context.mcpReq.signal
           );
           const workspace = await Workspace.bind(selection.root);
-          const bindingId = randomUUID2();
-          bindings.set(bindingId, {
+          const bindingId = await bindWorkspace(
             workspace,
-            thread: context.mcpReq._meta?.threadId
-          });
+            selection.project.id,
+            context.mcpReq._meta?.threadId
+          );
           const saved = stateSchema.safeParse(await workspace.loadState());
           data = {
             root: workspace.root,
@@ -246858,9 +246913,10 @@ serveStdio(() => {
     },
     async (args, context) => {
       try {
-        const workspace = workspaceFor(
+        const workspace = await workspaceFor(
           args.bindingId,
-          context.mcpReq._meta?.threadId
+          context.mcpReq._meta?.threadId,
+          context.mcpReq.signal
         );
         if (args.action === "snapshot")
           return success2(
@@ -246925,10 +246981,16 @@ serveStdio(() => {
     },
     async (args, context) => {
       try {
-        const path = await workspaceFor(
+        const workspace = await workspaceFor(
           args.bindingId,
-          context.mcpReq._meta?.threadId
-        ).mutate(args.action, args.path, args.destination);
+          context.mcpReq._meta?.threadId,
+          context.mcpReq.signal
+        );
+        const path = await workspace.mutate(
+          args.action,
+          args.path,
+          args.destination
+        );
         return success2({ ok: true, path: path ?? null });
       } catch (error62) {
         return failure2(error62);
@@ -246949,10 +247011,12 @@ serveStdio(() => {
     },
     async (args, context) => {
       try {
-        await workspaceFor(
+        const workspace = await workspaceFor(
           args.bindingId,
-          context.mcpReq._meta?.threadId
-        ).saveState(args.state);
+          context.mcpReq._meta?.threadId,
+          context.mcpReq.signal
+        );
+        await workspace.saveState(args.state);
         return success2({ ok: true });
       } catch (error62) {
         return failure2(error62);

@@ -16,7 +16,7 @@
 
 ## 安装
 
-采用与 [ponytail](https://github.com/DietrichGebert/ponytail/blob/main/i18n/README.zh-CN.md#安装) 相同的 GitHub 自定义 marketplace 方式。它是仓库分发源，安装后出现在本机插件列表中；官方公开目录上架是另一条流程。[Codex marketplace 官方说明](https://developers.openai.com/plugins/build/plugins)
+采用 GitHub 自定义 marketplace 方式。它是仓库分发源，安装后出现在本机插件列表中；官方公开目录上架是另一条流程。[Codex marketplace 官方说明](https://developers.openai.com/plugins/build/plugins)
 
 ### 1. 准备环境
 
@@ -164,15 +164,15 @@ codex plugin add visualfiles@visualfiles-local
 
 ## 常见问题
 
-| 问题 | 处理方式 |
-| --- | --- |
-| `codex: command not found` 或没有 `plugin` 子命令 | 安装或更新 Codex CLI，重新打开终端并检查 `codex plugin --help`。 |
-| 提示缺少 Node.js | 安装 Node.js 22+ 后重启客户端；特殊安装位置使用源码安装并配置 `VISUALFILES_NODE`。 |
-| 项目列表为空或读取失败 | 先在 Codex 创建项目并关联本机目录；更新客户端后刷新重试。项目列表使用实验性 `project/list`，客户端版本需要兼容该接口。 |
-| 搜索提示缺少 ripgrep | 安装 `rg` 并加入 PATH，或通过源码安装配置 `VISUALFILES_RG`；重新加载插件。 |
-| 聊天无法打开面板、仍显示旧界面或旧错误 | 检查市场来源和安装版本，按更新流程重装，重启客户端并开启新聊天。 |
-| 左侧「…」仍显示 VisualFiles | 按“清除旧的全局入口”重装 0.7.4 或更新版本，完全退出并重启客户端。 |
-| 能查看文件，但添加引用不可用 | 该能力需要客户端支持消息草稿接口；更新客户端后重试。 |
+| 问题                                              | 处理方式                                                                                                               |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `codex: command not found` 或没有 `plugin` 子命令 | 安装或更新 Codex CLI，重新打开终端并检查 `codex plugin --help`。                                                       |
+| 提示缺少 Node.js                                  | 安装 Node.js 22+ 后重启客户端；特殊安装位置使用源码安装并配置 `VISUALFILES_NODE`。                                     |
+| 项目列表为空或读取失败                            | 先在 Codex 创建项目并关联本机目录；更新客户端后刷新重试。项目列表使用实验性 `project/list`，客户端版本需要兼容该接口。 |
+| 搜索提示缺少 ripgrep                              | 安装 `rg` 并加入 PATH，或通过源码安装配置 `VISUALFILES_RG`；重新加载插件。                                             |
+| 聊天无法打开面板、仍显示旧界面或旧错误            | 检查市场来源和安装版本，按更新流程重装，重启客户端并开启新聊天。                                                       |
+| 左侧「…」仍显示 VisualFiles                       | 按“清除旧的全局入口”重装 0.7.4 或更新版本，完全退出并重启客户端。                                                      |
+| 能查看文件，但添加引用不可用                      | 该能力需要客户端支持消息草稿接口；更新客户端后重试。                                                                   |
 
 ## 维护说明
 

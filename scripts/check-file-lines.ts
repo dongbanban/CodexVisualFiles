@@ -5,6 +5,7 @@ import { extname } from "node:path";
 const limit = 500;
 const generatedFiles = new Set(["package-lock.json"]);
 const generatedDirectories = ["node_modules/", "dist/", "release/"];
+const textFiles = new Set([".npmrc"]);
 const textExtensions = new Set([
   ".ts",
   ".tsx",
@@ -39,7 +40,7 @@ for (const path of paths) {
   if (
     generatedFiles.has(path) ||
     generatedDirectories.some((directory) => path.startsWith(directory)) ||
-    !textExtensions.has(extname(path))
+    (!textFiles.has(path) && !textExtensions.has(extname(path)))
   )
     continue;
   let text: string;

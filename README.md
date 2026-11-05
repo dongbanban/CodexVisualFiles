@@ -217,6 +217,8 @@ codex plugin add visualfiles@visualfiles-local
 
 ## 维护说明
 
+仓库的 `.npmrc` 固定 `legacy-peer-deps=true`，让干净 CI 与现有锁文件使用同一安装模式，避免依赖个人 npm 配置。当前 `@openai/mcp-extensions@0.2.1` 声明的可选 peer 仍是 MCP Apps 1.x，而本项目已验证 2.x 集成；上游支持后应移除此兼容配置并重新验证。锁文件安装参数需保持一致，见 [npm ci 官方说明](https://docs.npmjs.com/cli/v10/commands/npm-ci/)。
+
 `release/` 是供 GitHub marketplace 直接安装的生成产物，随源码一起提交。维护者修改运行代码、启动脚本或包内文档后，应运行检查、构建和打包，并一并提交更新后的 `release/`。仓库不保留测试文件；行为验收使用临时隔离环境，完成后清理。`npm version` 的版本生命周期会同步插件清单、`src/shared.ts` 和 README，`npm run check` 校验这些文件及锁文件与 `package.json` 一致；自动发布统一递增版本并提交发布产物。
 
 代码规范见 [AGENTS.md](AGENTS.md)，详细行为约定见 [PLAN.md](PLAN.md)，产品、交互与官方目录发布评审见 [REVIEW.md](docs/REVIEW.md)。

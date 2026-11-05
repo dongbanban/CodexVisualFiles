@@ -245899,7 +245899,7 @@ function G(B, Q, F, V, q) {
 import { readFile as readFile3 } from "node:fs/promises";
 
 // src/shared.ts
-var VERSION = "0.7.7";
+var VERSION = "0.7.8";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,

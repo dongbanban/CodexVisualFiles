@@ -109,6 +109,20 @@ codex plugin add visualfiles@visualfiles-local
 
 如果命令仍选中源码目录内的同名市场，离开 VisualFiles 源码目录后重试。随后重启客户端。
 
+### 本机源码比 GitHub 市场更新
+
+若修复尚未推送到 GitHub，只用命令行临时覆盖市场来源安装，新版缓存仍可能在后续市场同步时被旧版覆盖。开发验收应持久切换为本地市场，再安装已构建的 `release/`：
+
+```bash
+codex plugin marketplace remove visualfiles-local
+codex plugin marketplace add /本机路径/VisualFiles
+codex plugin add visualfiles@visualfiles-local
+```
+
+此操作把本机市场来源切到源码目录，目录需要保留；不会修改项目文件或根目录 `.mcp.json`。新版推送到 GitHub 后，按“从旧本地安装迁移”切回 GitHub 源。
+
+重新打开后，以面板底部的版本和构建标识核对实际界面；仅检查 CLI 安装结果或后台服务版本不足以确认面板已更新。没有版本栏、Markdown 表格仍是竖线文本的面板属于旧界面，应关闭后重新打开。
+
 ## 卸载
 
 ```bash

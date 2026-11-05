@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsx scripts/build.ts",
     "package": "tsx scripts/package.ts",
-    "check": "tsx scripts/check-file-lines.ts && tsc --noEmit"
+    "version": "tsx scripts/version.ts",
+    "check": "tsx scripts/check-file-lines.ts && tsx scripts/version.ts --check && tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

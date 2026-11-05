@@ -198,8 +198,25 @@ codex plugin add visualfiles@visualfiles-local
 
 自动同步失败会在面板保留错误和重试入口。连接失效后停止重复请求，用“重新连接项目”在当前聊天重新校验项目；不会自动重试移动、复制或删除。文件操作失败时，对话框内也会保留错误。浮动提示仍在 3 秒后消失。
 
+## 自动发布
+
+推送到 `main` 后，[Release 工作流](https://github.com/dongbanban/CodexVisualFiles/actions/workflows/release.yml) 会自动：
+
+1. 从远端最新 `main` 读取版本，递增补丁号（例如 `0.7.9 → 0.7.10`）。
+2. 同步包配置、锁文件、插件清单、源码和 README 的版本；执行检查、构建和打包。
+3. 将版本与 `release/` 产物作为发布提交写回 `main`，原子推送同名 `v版本号` 标签。
+4. 创建 GitHub Release，附带可直接解压安装的 `visualfiles-v版本号.zip`。
+
+功能分支不发布。发布流程串行运行，密集推送可能合并到同一版最新代码；构建期间 `main` 更新时会重新构建，最多尝试三次，不强制覆盖远端。已发布的提交重跑不会再加版本；标签已推送但 GitHub Release 创建失败时，重跑会补齐该版本。
+
+工作流使用仓库自带的 `GITHUB_TOKEN` 和 `contents: write`，不需要额外密钥；GitHub 不会因该令牌产生的发布提交再次触发推送工作流，避免循环。[GitHub 官方说明](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
+
+推送后先确认 Actions 的 Release 成功，再刷新市场、更新插件并重开面板。GitHub Release 与更新本机插件是两步操作。继续开发前执行 `git pull --ff-only` 拉取机器人生成的版本与产物提交；若以后启用分支保护，需允许该流程写入 `main`，否则发布会明确失败。
+
+若需主动升级主/次版本，可先使用 `npm version minor --no-git-tag-version` 等 npm 命令；推送时仍自动递增一次补丁版本。仅校验版本一致性可运行 `npm run check`。
+
 ## 维护说明
 
-`release/` 是供 GitHub marketplace 直接安装的生成产物，随源码一起提交。维护者修改运行代码、启动脚本或包内文档后，应运行检查、构建和打包，并一并提交更新后的 `release/`。仓库不保留测试文件；行为验收使用临时隔离环境，完成后清理。发布版本需同步 `package.json`、锁文件、插件清单和 `src/shared.ts`。
+`release/` 是供 GitHub marketplace 直接安装的生成产物，随源码一起提交。维护者修改运行代码、启动脚本或包内文档后，应运行检查、构建和打包，并一并提交更新后的 `release/`。仓库不保留测试文件；行为验收使用临时隔离环境，完成后清理。`npm version` 的版本生命周期会同步插件清单、`src/shared.ts` 和 README，`npm run check` 校验这些文件及锁文件与 `package.json` 一致；自动发布统一递增版本并提交发布产物。
 
 代码规范见 [AGENTS.md](AGENTS.md)，详细行为约定见 [PLAN.md](PLAN.md)，产品、交互与官方目录发布评审见 [REVIEW.md](docs/REVIEW.md)。

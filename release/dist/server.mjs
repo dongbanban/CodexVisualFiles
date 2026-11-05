@@ -245899,8 +245899,8 @@ function G(B, Q, F, V, q) {
 import { readFile as readFile5 } from "node:fs/promises";
 
 // src/shared.ts
-var VERSION = "0.7.10";
-var BUILD_ID = true ? "59d9410cfa" : "development";
+var VERSION = "0.7.11";
+var BUILD_ID = true ? "26bcc91d24" : "development";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,

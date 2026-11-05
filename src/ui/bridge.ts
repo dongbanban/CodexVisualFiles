@@ -37,6 +37,13 @@ export async function rpc<T>(
   return result.structuredContent as T;
 }
 
+export async function openFileInCodex(path: string) {
+  const files = extensions.files;
+  if (!files)
+    throw new Error("当前客户端不支持在 Codex 中打开文件，请更新客户端");
+  await files.open(path);
+}
+
 export function onBinding(listener: (binding: Binding) => void) {
   receiveBinding = listener;
   return () => {

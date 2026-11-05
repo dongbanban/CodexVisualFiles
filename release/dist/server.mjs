@@ -245900,7 +245900,7 @@ import { readFile as readFile2 } from "node:fs/promises";
 import { randomUUID as randomUUID2 } from "node:crypto";
 
 // src/shared.ts
-var VERSION = "0.7.4";
+var VERSION = "0.7.5";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,

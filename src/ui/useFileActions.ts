@@ -9,6 +9,7 @@ import {
   ClipboardPaste,
   Scissors,
   MessageSquare,
+  ExternalLink,
 } from "lucide-react";
 import { type Snapshot, type Slot, type TreeEntry } from "../shared.js";
 import { type MenuAction } from "./chrome.js";
@@ -18,7 +19,7 @@ import {
   type ConversationTarget,
 } from "../conversation.js";
 import type { WorkspaceModel } from "./useWorkspace.js";
-import { bridge, extensions } from "./bridge.js";
+import { bridge, extensions, openFileInCodex } from "./bridge.js";
 import { parent, base, joinPath, ancestors, errorText } from "./file-utils.js";
 const INTERNAL_DRAG_TYPE = "application/x-visualfiles";
 
@@ -83,6 +84,23 @@ export function useFileActions(workspace: WorkspaceModel) {
     setNotice(
       `已${mode === "copy" ? "复制" : "剪切"} ${base(path)}，请在目标目录粘贴`,
     );
+  };
+  const openInCodex = async (path: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const file = await call<ConversationReference>("visualfiles_read", {
+        action: "reference",
+        path,
+      });
+      if (file.directory)
+        throw new Error("请选择文件，在 Codex 中打开不支持目录");
+      await openFileInCodex(file.absolutePath);
+    } catch (error) {
+      if (alive.current) setNotice(errorText(error));
+    } finally {
+      if (alive.current) setBusy(false);
+    }
   };
   const relocate = (source: string, destination: string) => {
     const changed = (value: string) =>
@@ -314,12 +332,19 @@ export function useFileActions(workspace: WorkspaceModel) {
               setDialog({ kind: "createDirectory", path, value: "" }),
           },
         ]
-      : []),
+      : [
+          {
+            label: "在 Codex 中打开",
+            Icon: ExternalLink,
+            disabled: busy,
+            action: () => void openInCodex(path),
+          },
+        ]),
     {
       label: "复制",
       Icon: Copy,
       disabled: !path || busy,
-      separator: directory,
+      separator: true,
       action: () => copyEntry("copy", path),
     },
     {

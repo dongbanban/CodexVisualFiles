@@ -40,7 +40,7 @@ export async function rpc<T>(
 export async function openFileInCodex(path: string) {
   const files = extensions.files;
   if (!files)
-    throw new Error("当前客户端不支持在 Codex 中打开文件，请更新客户端");
+    throw new Error("当前客户端不支持 Codex 原生查看，请更新客户端");
   await files.open(path);
 }
 

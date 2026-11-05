@@ -94,7 +94,7 @@ export function useFileActions(workspace: WorkspaceModel) {
         path,
       });
       if (file.directory)
-        throw new Error("请选择文件，在 Codex 中打开不支持目录");
+        throw new Error("Codex 原生查看仅支持文件，请选择文件");
       await openFileInCodex(file.absolutePath);
     } catch (error) {
       if (alive.current) setNotice(errorText(error));
@@ -334,7 +334,7 @@ export function useFileActions(workspace: WorkspaceModel) {
         ]
       : [
           {
-            label: "在 Codex 中打开",
+            label: "Codex 原生查看",
             Icon: ExternalLink,
             disabled: busy,
             action: () => void openInCodex(path),

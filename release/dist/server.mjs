@@ -245900,7 +245900,7 @@ import { readFile as readFile2 } from "node:fs/promises";
 import { randomUUID as randomUUID2 } from "node:crypto";
 
 // src/shared.ts
-var VERSION = "0.7.3";
+var VERSION = "0.7.4";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,
@@ -246334,7 +246334,7 @@ var Workspace = class _Workspace {
       path,
       head: headVersion,
       current: currentVersion,
-      hasDiff: !!entry && (!!currentVersion.tooLarge || !!headVersion.tooLarge || current === null || head === null || !current.equals(head))
+      hasDiff: !!entry && headVersion.exists && (!!currentVersion.tooLarge || !!headVersion.tooLarge || current === null || head === null || !current.equals(head))
     };
   }
   async snapshot(directories, paths) {
@@ -246754,26 +246754,7 @@ serveStdio(() => {
         ui: { resourceUri },
         "openai/outputTemplate": resourceUri,
         "openai/ui": {
-          entrypoints: [
-            {
-              type: "global",
-              quickAction: {
-                title: "\u6253\u5F00\u9879\u76EE\u6587\u4EF6\u6811",
-                icons: [
-                  {
-                    src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"%3E%3Cpath d="M3 7h6l2-3h10v16H3z"/%3E%3C/svg%3E',
-                    mimeType: "image/svg+xml"
-                  }
-                ],
-                target: {
-                  type: "tool",
-                  name: "open_visualfiles",
-                  arguments: {}
-                }
-              }
-            },
-            { type: "thread" }
-          ],
+          entrypoints: [{ type: "thread" }],
           preferredModelDisplayMode: "fullscreen"
         }
       }

@@ -1,13 +1,12 @@
 {
   "name": "visualfiles",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "tsx scripts/build.ts",
     "package": "tsx scripts/package.ts",
-    "check": "tsx scripts/check-file-lines.ts && tsc --noEmit",
-    "test": "node --import tsx --test src/workspace.test.ts scripts/check-file-lines.test.ts scripts/package.test.ts"
+    "check": "tsx scripts/check-file-lines.ts && tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

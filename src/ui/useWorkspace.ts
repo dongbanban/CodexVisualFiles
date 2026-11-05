@@ -96,7 +96,7 @@ export function useWorkspace(binding: Binding) {
             ),
           ],
         });
-        if (alive.current)
+        if (alive.current) {
           setSnapshot((old) => {
             const visible = new Set(
               stateRef.current.viewer.slots.flatMap((slot) =>
@@ -130,6 +130,21 @@ export function useWorkspace(binding: Binding) {
               ),
             };
           });
+          setStored((old) => {
+            const current = old.viewer.slots[1];
+            const file = current && data.files[current.path];
+            if (!old.viewer.diff || !file || file.head.exists) return old;
+            return {
+              ...old,
+              viewer: {
+                ...old.viewer,
+                slots: [current, null],
+                active: 0,
+                diff: false,
+              },
+            };
+          });
+        }
         refreshError.current = null;
         return true;
       } catch (error) {

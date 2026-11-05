@@ -345,6 +345,7 @@ export class Workspace {
       current: currentVersion,
       hasDiff:
         !!entry &&
+        headVersion.exists &&
         (!!currentVersion.tooLarge ||
           !!headVersion.tooLarge ||
           current === null ||

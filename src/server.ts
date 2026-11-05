@@ -110,26 +110,7 @@ serveStdio(() => {
         ui: { resourceUri },
         "openai/outputTemplate": resourceUri,
         "openai/ui": {
-          entrypoints: [
-            {
-              type: "global",
-              quickAction: {
-                title: "打开项目文件树",
-                icons: [
-                  {
-                    src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"%3E%3Cpath d="M3 7h6l2-3h10v16H3z"/%3E%3C/svg%3E',
-                    mimeType: "image/svg+xml",
-                  },
-                ],
-                target: {
-                  type: "tool",
-                  name: "open_visualfiles",
-                  arguments: {},
-                },
-              },
-            },
-            { type: "thread" },
-          ],
+          entrypoints: [{ type: "thread" }],
           preferredModelDisplayMode: "fullscreen",
         },
       },

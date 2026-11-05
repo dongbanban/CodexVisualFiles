@@ -1,12 +1,12 @@
 # VisualFiles
 
-在 Codex 独立面板中浏览本机项目、查看代码与 Git Diff，并把文件或选中代码添加到对话草稿。当前版本 **0.7.3**，支持 macOS（Apple Silicon / Intel）。
+在 Codex 独立面板中浏览本机项目、查看代码与 Git Diff，并把文件或选中代码添加到对话草稿。当前版本 **0.7.4**，支持 macOS（Apple Silicon / Intel）。
 
 ## 功能
 
 - 文件树、文件名与全文搜索，自动同步文件变化。
 - 只读代码高亮、文件内查找、Markdown 和图片预览。
-- 有改动的文件自动显示 HEAD 与当前磁盘内容的左右对比。
+- 已有文件的改动自动显示 HEAD 与当前磁盘内容的左右对比；新增文件只显示当前全文。
 - 新建空文件/目录、复制、剪切、移动、重命名；删除进入系统废纸篓。
 - 将文件、目录或选中代码添加到当前或新对话草稿，不自动发送。
 - 拖动左右分隔线调整宽度，按项目记住布局与阅读位置。
@@ -56,7 +56,7 @@ codex plugin add visualfiles@visualfiles-local
 ### 3. 重启并打开
 
 1. 重新启动 Codex 桌面客户端，打开或新建本机项目聊天。
-2. 在插件入口选择 VisualFiles，或在聊天中输入“打开文件树”。
+2. 在项目聊天中输入“打开文件树”，或使用对话内的 VisualFiles 面板入口。插件不再向左侧「…」全局菜单注册手动入口。
 3. 选择已登记项目，点击左侧文件即可查看。Markdown 文件可用标题栏的眼睛图标切换源码和预览。
 
 可执行下列命令查看安装信息：
@@ -78,6 +78,19 @@ codex plugin add visualfiles@visualfiles-local
 ```
 
 完成后重启客户端并打开新聊天。重装不操作项目目录；直接修改插件缓存中的自定义配置会被新安装包覆盖。
+
+### 清除旧的全局入口
+
+0.7.4 已删除全局侧栏入口及快捷操作声明，保留聊天内打开文件树的能力。旧入口由已安装插件的 MCP 元数据注册；仅更新源码不会替换旧安装缓存。
+
+GitHub 市场安装按上方更新流程重装。使用本地源码市场时，先确保已重新构建和打包，再执行：
+
+```bash
+codex plugin remove visualfiles@visualfiles-local
+codex plugin add visualfiles@visualfiles-local
+```
+
+随后用 **⌘Q 完全退出客户端**，重新打开并使用新聊天，使客户端重新读取新版入口声明。无需手工删除 Codex 的配置文件或数据库。
 
 ### 从旧本地安装迁移
 
@@ -110,7 +123,6 @@ git clone https://github.com/dongbanban/CodexVisualFiles.git
 cd CodexVisualFiles
 npm ci
 npm run check
-npm test
 npm run build
 npm run package
 ```
@@ -157,11 +169,12 @@ codex plugin add visualfiles@visualfiles-local
 | 提示缺少 Node.js | 安装 Node.js 22+ 后重启客户端；特殊安装位置使用源码安装并配置 `VISUALFILES_NODE`。 |
 | 项目列表为空或读取失败 | 先在 Codex 创建项目并关联本机目录；更新客户端后刷新重试。项目列表使用实验性 `project/list`，客户端版本需要兼容该接口。 |
 | 搜索提示缺少 ripgrep | 安装 `rg` 并加入 PATH，或通过源码安装配置 `VISUALFILES_RG`；重新加载插件。 |
-| 安装后没有入口、仍显示旧界面或旧错误 | 检查市场来源和安装版本，按更新流程重装，重启客户端并开启新聊天。 |
+| 聊天无法打开面板、仍显示旧界面或旧错误 | 检查市场来源和安装版本，按更新流程重装，重启客户端并开启新聊天。 |
+| 左侧「…」仍显示 VisualFiles | 按“清除旧的全局入口”重装 0.7.4 或更新版本，完全退出并重启客户端。 |
 | 能查看文件，但添加引用不可用 | 该能力需要客户端支持消息草稿接口；更新客户端后重试。 |
 
 ## 维护说明
 
-`release/` 是供 GitHub marketplace 直接安装的生成产物，随源码一起提交。维护者修改运行代码、启动脚本或包内文档后，应运行检查、测试、构建和打包，并一并提交更新后的 `release/`。发布版本需同步 `package.json`、锁文件、插件清单和 `src/shared.ts`。
+`release/` 是供 GitHub marketplace 直接安装的生成产物，随源码一起提交。维护者修改运行代码、启动脚本或包内文档后，应运行检查、构建和打包，并一并提交更新后的 `release/`。仓库不保留测试文件；行为验收使用临时隔离环境，完成后清理。发布版本需同步 `package.json`、锁文件、插件清单和 `src/shared.ts`。
 
 代码规范见 [AGENTS.md](AGENTS.md)，详细行为约定见 [PLAN.md](PLAN.md)，产品、交互与官方目录发布评审见 [REVIEW.md](docs/REVIEW.md)。

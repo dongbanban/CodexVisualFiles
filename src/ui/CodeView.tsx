@@ -27,6 +27,7 @@ import { ArrowLeft, ArrowRight, CornerDownRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { IconButton } from "./chrome.js";
 import type { Slot, FileVersion, DefinitionLocation } from "../shared.js";
+import type { CodeNavigation } from "./useCodeNavigation.js";
 
 export interface CodeSelection {
   path: string;
@@ -45,6 +46,9 @@ interface Props {
   onScroll: (index: number, top: number) => void;
   line?: number;
   active?: number;
+  head: string | null;
+  location: DefinitionLocation | null;
+  navigation: CodeNavigation;
   onDefinition: (
     slot: Slot,
     position: number,
@@ -59,64 +63,35 @@ export function CodeView(props: Props) {
   latest.current = props;
   const active = useRef(props.active ?? 0);
   const [cursorLabel, setCursorLabel] = useState("行 1，列 1");
-  const history = useRef<{
-    back: Array<DefinitionLocation & { index: number }>;
-    forward: Array<DefinitionLocation & { index: number }>;
-  }>({ back: [], forward: [] });
-  const [navigation, setNavigation] = useState({ back: false, forward: false });
   const [defining, setDefining] = useState(false);
   const [definitionAvailable, setDefinitionAvailable] = useState(false);
   const canDefine = (index: number) =>
     /\.(?:[cm]?[jt]s|[jt]sx)$/i.test(latest.current.slots[index]?.path ?? "");
   const definitionRequest = useRef(0);
-  const publishHistory = () =>
-    setNavigation({
-      back: !!history.current.back.length,
-      forward: !!history.current.forward.length,
-    });
-  const currentLocation = () => {
-    const index = active.current;
+  const currentLocation = (
+    index = active.current,
+  ): DefinitionLocation | null => {
     const editor = editors.current[index];
-    if (!editor) return null;
+    const slot = latest.current.slots[index];
+    const version = latest.current.versions[index];
+    if (!editor || !slot || !version?.revision) return null;
+    if (editor.state.doc.toString() !== version.text.replace(/\r\n?/g, "\n"))
+      return null;
     return {
-      index,
+      path: slot.path,
+      version: slot.version,
+      revision: version.revision,
+      ...(slot.version === "head"
+        ? { head: latest.current.head ?? undefined }
+        : {}),
       from: editor.state.selection.main.from,
       to: editor.state.selection.main.to,
     };
   };
-  const moveTo = (
-    location: DefinitionLocation & { index: number },
-    remember = true,
-  ) => {
-    const editor = editors.current[location.index];
-    if (!editor) return;
-    const previous = currentLocation();
-    if (
-      remember &&
-      previous &&
-      (previous.index !== location.index ||
-        previous.from !== location.from ||
-        previous.to !== location.to)
-    ) {
-      history.current.back.push(previous);
-      history.current.forward = [];
-    }
-    active.current = location.index;
-    const from = Math.min(Math.max(0, location.from), editor.state.doc.length);
-    const to = Math.min(Math.max(from, location.to), editor.state.doc.length);
-    editor.dispatch({
-      selection: { anchor: from, head: to },
-      effects: EditorView.scrollIntoView(from, { y: "center" }),
-    });
-    editor.focus();
-    publishHistory();
-  };
   const navigate = (direction: "back" | "forward") => {
-    const previous = currentLocation();
-    const location = history.current[direction].pop();
-    if (!location || !previous) return false;
-    history.current[direction === "back" ? "forward" : "back"].push(previous);
-    moveTo(location, false);
+    const origin = currentLocation();
+    if (!origin || !latest.current.navigation[direction]) return false;
+    void latest.current.navigation.navigate(direction, origin);
     return true;
   };
   const jumpToDefinition = async (
@@ -150,8 +125,13 @@ export function CodeView(props: Props) {
         !editor.state.selection.main.eq(origin)
       )
         return;
-      if (location) moveTo({ ...location, index });
-      else toast.message("未找到同一文件中的定义", { duration: 3000 });
+      const previous = currentLocation(index);
+      if (location && previous)
+        await latest.current.navigation.jump(location, previous);
+      else
+        toast.message("未找到定义，请检查导入路径、项目配置和依赖是否可用", {
+          duration: 3000,
+        });
     } catch (error) {
       if (request === definitionRequest.current)
         toast.error(error instanceof Error ? error.message : String(error), {
@@ -170,8 +150,6 @@ export function CodeView(props: Props) {
     const element = host.current!;
     active.current = props.active ?? 0;
     setDefinitionAvailable(canDefine(active.current));
-    history.current = { back: [], forward: [] };
-    publishHistory();
     definitionRequest.current++;
     setDefining(false);
     const extensions = (index: number): Extension[] => [
@@ -210,7 +188,7 @@ export function CodeView(props: Props) {
         ...defaultKeymap,
       ]),
       EditorView.domEventHandlers({
-        mousedown: (event, view) => {
+        click: (event, view) => {
           active.current = index;
           setDefinitionAvailable(canDefine(index));
           if (event.button !== 0 || (!event.metaKey && !event.ctrlKey))
@@ -339,8 +317,6 @@ export function CodeView(props: Props) {
       editor.scrollDOM.scrollTop = top;
     });
     if (changed) {
-      history.current = { back: [], forward: [] };
-      publishHistory();
       definitionRequest.current++;
       setDefining(false);
     }
@@ -361,19 +337,39 @@ export function CodeView(props: Props) {
           ),
         });
   }, [props.line, identity]);
+  useEffect(() => {
+    const location = props.location;
+    if (!location) return;
+    const index = props.slots.findIndex(
+      (slot) =>
+        slot?.path === location.path && slot.version === location.version,
+    );
+    const editor = editors.current[index];
+    if (!editor || props.versions[index]?.revision !== location.revision)
+      return;
+    active.current = index;
+    setDefinitionAvailable(canDefine(index));
+    const from = Math.min(location.from, editor.state.doc.length);
+    const to = Math.min(Math.max(from, location.to), editor.state.doc.length);
+    editor.dispatch({
+      selection: { anchor: from, head: to },
+      effects: EditorView.scrollIntoView(from, { y: "center" }),
+    });
+    editor.focus();
+  }, [props.location, identity]);
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-7 shrink-0 items-center gap-1 border-b bg-muted/15 px-2">
         <IconButton
           label="后退（Alt＋←）"
-          disabled={!navigation.back}
+          disabled={!props.navigation.back}
           onClick={() => navigate("back")}
         >
           <ArrowLeft className="size-3.5" />
         </IconButton>
         <IconButton
           label="前进（Alt＋→）"
-          disabled={!navigation.forward}
+          disabled={!props.navigation.forward}
           onClick={() => navigate("forward")}
         >
           <ArrowRight className="size-3.5" />
@@ -381,8 +377,8 @@ export function CodeView(props: Props) {
         <IconButton
           label={
             definitionAvailable
-              ? "本文件定义（JS/TS；F12 或 ⌘/Ctrl＋点击；不解析导入文件）"
-              : "本文件定义仅支持 JS/TS，不解析导入文件"
+              ? "跳转到定义（JS/TS；F12 或 ⌘/Ctrl＋点击；支持项目内依赖）"
+              : "定义跳转仅支持 JS/TS"
           }
           disabled={defining || !definitionAvailable}
           onClick={() => void jumpToDefinition()}
@@ -394,7 +390,7 @@ export function CodeView(props: Props) {
           )}
         </IconButton>
         <span className="text-xs text-muted-foreground">
-          本文件定义{definitionAvailable ? "" : " · 仅 JS/TS"}
+          跳转到定义{definitionAvailable ? "" : " · 仅 JS/TS"}
         </span>
         <span className="ml-auto truncate text-xs text-muted-foreground">
           {cursorLabel}

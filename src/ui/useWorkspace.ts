@@ -16,6 +16,7 @@ import { type CodeSelection } from "./CodeView.js";
 import { toast } from "sonner";
 import { rpc, ToolError } from "./bridge.js";
 import { ancestors, errorText } from "./file-utils.js";
+import { useCodeNavigation } from "./useCodeNavigation.js";
 
 export function useWorkspace(binding: Binding) {
   const alive = useRef(true);
@@ -57,6 +58,10 @@ export function useWorkspace(binding: Binding) {
   const [selected, setSelected] = useState("");
 
   const [line, setLine] = useState<number>();
+  const [codeLocation, setCodeLocation] = useState<DefinitionLocation | null>(
+    null,
+  );
+  const openRequest = useRef(0);
 
   const stateRef = useRef(stored);
   stateRef.current = stored;
@@ -102,12 +107,76 @@ export function useWorkspace(binding: Binding) {
           version: slot.version,
           position,
           revision,
+          ...(slot.version === "head" ? { head: snapshot.info.head } : {}),
         },
       );
       return data.definition;
     },
-    [call],
+    [call, snapshot.info.head],
   );
+  const codeNavigation = useCodeNavigation(async (location) => {
+    const request = ++openRequest.current;
+    const origin = stateRef.current.viewer;
+    const data = await call<FileData>("visualfiles_read", {
+      action: "file",
+      path: location.path,
+      version: location.version,
+      revision: location.revision,
+      head: location.head,
+    });
+    if (!alive.current || request !== openRequest.current) return false;
+    if (
+      origin.slots.some((slot, index) => {
+        const current = stateRef.current.viewer.slots[index];
+        return (
+          slot?.path !== current?.path ||
+          slot?.version !== current?.version ||
+          slot?.opened !== current?.opened
+        );
+      })
+    )
+      return false;
+    const version = data[location.version];
+    if (
+      version.revision !== location.revision ||
+      !version.exists ||
+      version.binary
+    )
+      throw new Error("目标文件已更新，请重新执行定义跳转");
+    setSnapshot((old) => ({
+      ...old,
+      files: { ...old.files, [data.path]: data },
+    }));
+    setStored((old) => {
+      let viewer = old.viewer;
+      if (
+        !viewer.slots.some(
+          (slot) =>
+            slot?.path === location.path && slot.version === location.version,
+        )
+      ) {
+        viewer = openFile(
+          viewer,
+          location.path,
+          data.hasDiff || location.version === "head",
+        );
+      }
+      const active = viewer.slots.findIndex(
+        (slot) =>
+          slot?.path === location.path && slot.version === location.version,
+      ) as 0 | 1;
+      return {
+        ...old,
+        expanded: [...new Set([...old.expanded, ...ancestors(location.path)])],
+        viewer: { ...viewer, active },
+      };
+    });
+    setSelected(location.path);
+    setLine(undefined);
+    selection.current = null;
+    setCodeLocation({ ...location });
+    return true;
+  }, setError);
   const refresh = useCallback((): Promise<boolean> => {
     if (blocked.current) return Promise.resolve(false);
     if (polling.current) return polling.current;
@@ -273,6 +342,8 @@ export function useWorkspace(binding: Binding) {
 
   const open = useCallback(
     (path: string, targetLine?: number) => {
+      const request = ++openRequest.current;
+      setCodeLocation(null);
       setSelected(path);
       setReading(true);
       setLine(targetLine);
@@ -283,7 +354,7 @@ export function useWorkspace(binding: Binding) {
             action: "file",
             path,
           });
-          if (!alive.current) return;
+          if (!alive.current || request !== openRequest.current) return;
           setSnapshot((old) => ({
             ...old,
             files: { ...old.files, [path]: data },
@@ -350,6 +421,8 @@ export function useWorkspace(binding: Binding) {
     selected,
     setSelected,
     line,
+    codeLocation,
+    codeNavigation,
     filesRef,
     selection,
     call,

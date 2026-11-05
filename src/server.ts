@@ -236,6 +236,10 @@ serveStdio(() => {
         version: z.enum(["head", "current"]).optional(),
         position: z.number().int().nonnegative().optional(),
         revision: z.string().length(64).optional(),
+        head: z
+          .string()
+          .regex(/^[a-f0-9]{40,64}$/)
+          .optional(),
         path: pathSchema.optional(),
         directories: z.array(pathSchema).max(2000).optional(),
         paths: z.array(pathSchema).max(2).optional(),
@@ -266,6 +270,11 @@ serveStdio(() => {
           return success(await workspace.reference(args.path ?? ""));
         if (args.action === "definition") {
           await workspace.refreshInfo();
+          if (args.version === "head" && args.head !== workspace.info.head)
+            throw new Error("HEAD 已变化，请刷新后重试定义跳转");
+          const definitions = workspace.definitionFiles(
+            args.version ?? "current",
+          );
           const file = await workspace.file(args.path ?? "", true);
           const version = file[args.version ?? "current"];
           if (!version.exists || version.binary || version.tooLarge)
@@ -273,16 +282,26 @@ serveStdio(() => {
           if (!args.revision || args.revision !== version.revision)
             throw new Error("文件已更新，请刷新后重试定义跳转");
           return success({
-            definition: definitionAt(
+            definition: await definitionAt(
+              definitions,
               file.path,
               version.text.replace(/\r\n?/g, "\n"),
               args.position ?? 0,
+              context.mcpReq.signal,
             ),
           });
         }
         if (args.action === "file") {
           await workspace.refreshInfo();
-          return success(await workspace.file(args.path ?? ""));
+          if (args.version === "head" && args.head !== workspace.info.head)
+            throw new Error("HEAD 已变化，请刷新后重试跳转");
+          const file = await workspace.file(args.path ?? "", !!args.revision);
+          if (
+            args.revision &&
+            file[args.version ?? "current"].revision !== args.revision
+          )
+            throw new Error("目标文件已更新，请重新执行定义跳转");
+          return success(file);
         }
         return success(
           await workspace.search(

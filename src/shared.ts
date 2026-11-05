@@ -141,6 +141,10 @@ export interface LocalProject {
   roots: string[];
 }
 export interface DefinitionLocation {
+  path: string;
+  version: Version;
+  revision: string;
+  head?: string;
   from: number;
   to: number;
 }

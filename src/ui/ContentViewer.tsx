@@ -39,6 +39,8 @@ export function ContentViewer({
     open,
     onScroll,
     findDefinition,
+    codeNavigation,
+    codeLocation,
     connectionError,
   } = workspace;
   const { busy, pathActions, conversationActions } = actions;
@@ -193,6 +195,9 @@ export function ContentViewer({
             }}
             onScroll={onScroll}
             onDefinition={findDefinition}
+            head={snapshot.info.head}
+            location={codeLocation}
+            navigation={codeNavigation}
           />
         ) : (
           <div
@@ -238,6 +243,9 @@ export function ContentViewer({
                     }}
                     onScroll={(_, top) => onScroll(index, top)}
                     onDefinition={findDefinition}
+                    head={snapshot.info.head}
+                    location={codeLocation}
+                    navigation={codeNavigation}
                   />
                 )}
               </div>

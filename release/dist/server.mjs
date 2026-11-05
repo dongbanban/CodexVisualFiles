@@ -8633,7 +8633,7 @@ ${lanes.join("\n")}
             writeOutputIsTTY() {
               return process.stdout.isTTY;
             },
-            readFile: readFile5,
+            readFile: readFile6,
             writeFile: writeFile22,
             watchFile: watchFile2,
             watchDirectory,
@@ -8674,9 +8674,9 @@ ${lanes.join("\n")}
               return process.memoryUsage().heapUsed;
             },
             getFileSize(path) {
-              const stat3 = statSync(path);
-              if (stat3 == null ? void 0 : stat3.isFile()) {
-                return stat3.size;
+              const stat4 = statSync(path);
+              if (stat4 == null ? void 0 : stat4.isFile()) {
+                return stat4.size;
               }
               return 0;
             },
@@ -8839,7 +8839,7 @@ ${lanes.join("\n")}
               callback
             );
           }
-          function readFile5(fileName, _encoding) {
+          function readFile6(fileName, _encoding) {
             let buffer;
             try {
               buffer = _fs.readFileSync(fileName);
@@ -8894,19 +8894,19 @@ ${lanes.join("\n")}
                 if (entry === "." || entry === "..") {
                   continue;
                 }
-                let stat3;
+                let stat4;
                 if (typeof dirent === "string" || dirent.isSymbolicLink()) {
                   const name = combinePaths(path, entry);
-                  stat3 = statSync(name);
-                  if (!stat3) {
+                  stat4 = statSync(name);
+                  if (!stat4) {
                     continue;
                   }
                 } else {
-                  stat3 = dirent;
+                  stat4 = dirent;
                 }
-                if (stat3.isFile()) {
+                if (stat4.isFile()) {
                   files.push(entry);
-                } else if (stat3.isDirectory()) {
+                } else if (stat4.isDirectory()) {
                   directories.push(entry);
                 }
               }
@@ -8921,15 +8921,15 @@ ${lanes.join("\n")}
             return matchFiles(path, extensions, excludes, includes, useCaseSensitiveFileNames2, process.cwd(), depth, getAccessibleFileSystemEntries, realpath3);
           }
           function fileSystemEntryExists(path, entryKind) {
-            const stat3 = statSync(path);
-            if (!stat3) {
+            const stat4 = statSync(path);
+            if (!stat4) {
               return false;
             }
             switch (entryKind) {
               case 0:
-                return stat3.isFile();
+                return stat4.isFile();
               case 1:
-                return stat3.isDirectory();
+                return stat4.isDirectory();
               default:
                 return false;
             }
@@ -9427,11 +9427,11 @@ ${lanes.join("\n")}
           return toComponents;
         }
         const components = toComponents.slice(start);
-        const relative2 = [];
+        const relative3 = [];
         for (; start < fromComponents.length; start++) {
-          relative2.push("..");
+          relative3.push("..");
         }
-        return ["", ...relative2, ...components];
+        return ["", ...relative3, ...components];
       }
       function getRelativePathFromDirectory(fromDirectory, to, getCanonicalFileNameOrIgnoreCase) {
         Debug.assert(getRootLength(fromDirectory) > 0 === getRootLength(to) > 0, "Paths must either both be absolute or both be relative");
@@ -45395,7 +45395,7 @@ ${lanes.join("\n")}
         const possibleOption = getSpellingSuggestion(unknownOption, diagnostics.optionDeclarations, getOptionName);
         return possibleOption ? createDiagnosticForNodeInSourceFileOrCompilerDiagnostic(sourceFile, node2, diagnostics.unknownDidYouMeanDiagnostic, unknownOptionErrorText || unknownOption, possibleOption.name) : createDiagnosticForNodeInSourceFileOrCompilerDiagnostic(sourceFile, node2, diagnostics.unknownOptionDiagnostic, unknownOptionErrorText || unknownOption);
       }
-      function parseCommandLineWorker(diagnostics, commandLine, readFile5) {
+      function parseCommandLineWorker(diagnostics, commandLine, readFile6) {
         const options = {};
         let watchOptions;
         const fileNames = [];
@@ -45443,7 +45443,7 @@ ${lanes.join("\n")}
           }
         }
         function parseResponseFile(fileName) {
-          const text = tryReadFile(fileName, readFile5 || ((fileName2) => sys.readFile(fileName2)));
+          const text = tryReadFile(fileName, readFile6 || ((fileName2) => sys.readFile(fileName2)));
           if (!isString(text)) {
             errors.push(text);
             return;
@@ -45546,8 +45546,8 @@ ${lanes.join("\n")}
         unknownDidYouMeanDiagnostic: Diagnostics.Unknown_compiler_option_0_Did_you_mean_1,
         optionTypeMismatchDiagnostic: Diagnostics.Compiler_option_0_expects_an_argument
       };
-      function parseCommandLine(commandLine, readFile5) {
-        return parseCommandLineWorker(compilerOptionsDidYouMeanDiagnostics, commandLine, readFile5);
+      function parseCommandLine(commandLine, readFile6) {
+        return parseCommandLineWorker(compilerOptionsDidYouMeanDiagnostics, commandLine, readFile6);
       }
       function getOptionFromName(optionName, allowShort) {
         return getOptionDeclarationFromName(getOptionsNameMap, optionName, allowShort);
@@ -45629,8 +45629,8 @@ ${lanes.join("\n")}
           watchOptionsToExtend
         );
       }
-      function readConfigFile(fileName, readFile5) {
-        const textOrDiagnostic = tryReadFile(fileName, readFile5);
+      function readConfigFile(fileName, readFile6) {
+        const textOrDiagnostic = tryReadFile(fileName, readFile6);
         return isString(textOrDiagnostic) ? parseConfigFileTextToJson(fileName, textOrDiagnostic) : { config: {}, error: textOrDiagnostic };
       }
       function parseConfigFileTextToJson(fileName, jsonText) {
@@ -45645,14 +45645,14 @@ ${lanes.join("\n")}
           error: jsonSourceFile.parseDiagnostics.length ? jsonSourceFile.parseDiagnostics[0] : void 0
         };
       }
-      function readJsonConfigFile(fileName, readFile5) {
-        const textOrDiagnostic = tryReadFile(fileName, readFile5);
+      function readJsonConfigFile(fileName, readFile6) {
+        const textOrDiagnostic = tryReadFile(fileName, readFile6);
         return isString(textOrDiagnostic) ? parseJsonText(fileName, textOrDiagnostic) : { fileName, parseDiagnostics: [textOrDiagnostic] };
       }
-      function tryReadFile(fileName, readFile5) {
+      function tryReadFile(fileName, readFile6) {
         let text;
         try {
-          text = readFile5(fileName);
+          text = readFile6(fileName);
         } catch (e) {
           return createCompilerDiagnostic(Diagnostics.Cannot_read_file_0_Colon_1, fileName, e.message);
         }
@@ -48000,11 +48000,11 @@ ${lanes.join("\n")}
             if (i < rootLength) {
               return void 0;
             }
-            const sep2 = directory.lastIndexOf(directorySeparator, i - 1);
-            if (sep2 === -1) {
+            const sep3 = directory.lastIndexOf(directorySeparator, i - 1);
+            if (sep3 === -1) {
               return void 0;
             }
-            return directory.substr(0, Math.max(sep2, rootLength));
+            return directory.substr(0, Math.max(sep3, rootLength));
           }
         }
       }
@@ -53910,9 +53910,9 @@ ${lanes.join("\n")}
               if (!startsWithDirectory(target, realPathDirectory, getCanonicalFileName)) {
                 return;
               }
-              const relative2 = getRelativePathFromDirectory(realPathDirectory, target, getCanonicalFileName);
+              const relative3 = getRelativePathFromDirectory(realPathDirectory, target, getCanonicalFileName);
               for (const symlinkDirectory of symlinkDirectories) {
-                const option = resolvePath(symlinkDirectory, relative2);
+                const option = resolvePath(symlinkDirectory, relative3);
                 const result2 = cb(option, target === referenceRedirect);
                 shouldFilterIgnoredPaths = true;
                 if (result2) return result2;
@@ -123749,7 +123749,7 @@ ${lanes.join("\n")}
           }
         }
         function createImportCallExpressionAMD(arg, containsLexicalThis) {
-          const resolve2 = factory2.createUniqueName("resolve");
+          const resolve4 = factory2.createUniqueName("resolve");
           const reject = factory2.createUniqueName("reject");
           const parameters = [
             factory2.createParameterDeclaration(
@@ -123758,7 +123758,7 @@ ${lanes.join("\n")}
               /*dotDotDotToken*/
               void 0,
               /*name*/
-              resolve2
+              resolve4
             ),
             factory2.createParameterDeclaration(
               /*modifiers*/
@@ -123775,7 +123775,7 @@ ${lanes.join("\n")}
                 factory2.createIdentifier("require"),
                 /*typeArguments*/
                 void 0,
-                [factory2.createArrayLiteralExpression([arg || factory2.createOmittedExpression()]), resolve2, reject]
+                [factory2.createArrayLiteralExpression([arg || factory2.createOmittedExpression()]), resolve4, reject]
               )
             )
           ]);
@@ -135310,12 +135310,12 @@ ${lanes.join("\n")}
       function createCompilerHost(options, setParentNodes) {
         return createCompilerHostWorker(options, setParentNodes);
       }
-      function createGetSourceFile(readFile5, setParentNodes) {
+      function createGetSourceFile(readFile6, setParentNodes) {
         return (fileName, languageVersionOrOptions, onError) => {
           let text;
           try {
             mark("beforeIORead");
-            text = readFile5(fileName);
+            text = readFile6(fileName);
             mark("afterIORead");
             measure("I/O Read", "beforeIORead", "afterIORead");
           } catch (e) {
@@ -136219,7 +136219,7 @@ ${lanes.join("\n")}
           getRedirectFromOutput,
           forEachResolvedProjectReference: forEachResolvedProjectReference2
         });
-        const readFile5 = host.readFile.bind(host);
+        const readFile6 = host.readFile.bind(host);
         (_e = tracing) == null ? void 0 : _e.push(tracing.Phase.Program, "shouldProgramCreateNewSourceFiles", { hasOldProgram: !!oldProgram });
         const shouldCreateNewSourceFile = shouldProgramCreateNewSourceFiles(oldProgram, options);
         (_f = tracing) == null ? void 0 : _f.pop();
@@ -136445,7 +136445,7 @@ ${lanes.join("\n")}
           shouldTransformImportCall,
           emitBuildInfo,
           fileExists,
-          readFile: readFile5,
+          readFile: readFile6,
           directoryExists,
           getSymlinkCache,
           realpath: (_o = host.realpath) == null ? void 0 : _o.bind(host),
@@ -210493,8 +210493,8 @@ Additional information: BADCLIENT: Bad error code, ${badCode} not found in range
         installPackage(options) {
           this.packageInstallId++;
           const request = { kind: "installPackage", ...options, id: this.packageInstallId };
-          const promise2 = new Promise((resolve2, reject) => {
-            (this.packageInstalledPromise ?? (this.packageInstalledPromise = /* @__PURE__ */ new Map())).set(this.packageInstallId, { resolve: resolve2, reject });
+          const promise2 = new Promise((resolve4, reject) => {
+            (this.packageInstalledPromise ?? (this.packageInstalledPromise = /* @__PURE__ */ new Map())).set(this.packageInstallId, { resolve: resolve4, reject });
           });
           this.installer.send(request);
           return promise2;
@@ -215900,7 +215900,7 @@ var recursive = /* @__PURE__ */ new WeakMap();
 var NONE = 0;
 var ASSUMED = 1;
 var PROVEN = 2;
-function isRecursive(inst, stack, resolve2) {
+function isRecursive(inst, stack, resolve4) {
   const cached2 = recursive.get(inst);
   if (cached2 !== void 0)
     return cached2 ? PROVEN : NONE;
@@ -215910,7 +215910,7 @@ function isRecursive(inst, stack, resolve2) {
   let result = NONE;
   const check2 = (child) => {
     if (result !== PROVEN && child?._zod) {
-      const answer = isRecursive(child, stack, resolve2);
+      const answer = isRecursive(child, stack, resolve4);
       if (answer > result)
         result = answer;
     }
@@ -215921,7 +215921,7 @@ function isRecursive(inst, stack, resolve2) {
       const desc = Object.getOwnPropertyDescriptor(sh, key);
       if (spread && !desc.enumerable)
         continue;
-      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve2) : NONE;
+      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve4) : NONE;
       if (child > answer)
         answer = child;
     }
@@ -215985,7 +215985,7 @@ function isRecursive(inst, stack, resolve2) {
       break;
     // `$ZodLazy` caches its inner on the def, so a resolved edge is followed exactly
     case "lazy": {
-      const inner = def._cachedInner ?? (resolve2 ? inst._zod.innerType : void 0);
+      const inner = def._cachedInner ?? (resolve4 ? inst._zod.innerType : void 0);
       merge2(inner ? isRecursive(inner, stack, false) : ASSUMED);
       break;
     }
@@ -234930,14 +234930,14 @@ function inputRequiredRoundsExceededMessage(method, maxRounds) {
   return `Multi-round-trip request '${method}' still required input after ${maxRounds} rounds (inputRequired.maxRounds)`;
 }
 function sleep(ms, signal) {
-  return new Promise((resolve2, reject) => {
+  return new Promise((resolve4, reject) => {
     if (signal?.aborted) {
       reject(signal.reason instanceof SdkError ? signal.reason : new SdkError(SdkErrorCode.RequestTimeout, String(signal.reason)));
       return;
     }
     const timer = setTimeout(() => {
       signal?.removeEventListener("abort", onAbort);
-      resolve2();
+      resolve4();
     }, ms);
     const onAbort = () => {
       clearTimeout(timer);
@@ -235736,7 +235736,7 @@ var Protocol = class {
     const flowStartedAt = Date.now();
     let onAbort;
     let cleanupMessageId;
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve4, reject) => {
       const earlyReject = (error62) => {
         reject(error62);
       };
@@ -235805,7 +235805,7 @@ var Protocol = class {
         }
         if (decoded.kind === "invalid") return reject(decoded.error);
         if (decoded.kind === "input_required") {
-          if (options?.allowInputRequired === true) return resolve2(manualInputRequiredValue(decoded));
+          if (options?.allowInputRequired === true) return resolve4(manualInputRequiredValue(decoded));
           const flow = {
             codec: codec2,
             request,
@@ -235817,11 +235817,11 @@ var Protocol = class {
               params
             }, resultSchema, legOptions)
           };
-          return resolve2(this._resolveNonCompleteResult(decoded, flow));
+          return resolve4(this._resolveNonCompleteResult(decoded, flow));
         }
         const result = decoded.result;
         validateStandardSchema(resultSchema, result).then((parseResult) => {
-          if (parseResult.success) resolve2(parseResult.data);
+          if (parseResult.success) resolve4(parseResult.data);
           else reject(new SdkError(SdkErrorCode.InvalidResult, `Invalid result for ${request.method}: ${parseResult.error}`));
         }, reject);
       });
@@ -238737,7 +238737,7 @@ var require_compile = /* @__PURE__ */ __commonJSMin(((exports) => {
     ref = (0, resolve_1.resolveUrl)(this.opts.uriResolver, baseId, ref);
     const schOrFunc = root.refs[ref];
     if (schOrFunc) return schOrFunc;
-    let _sch = resolve2.call(this, root, ref);
+    let _sch = resolve4.call(this, root, ref);
     if (_sch === void 0) {
       const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
       const { schemaId } = this.opts;
@@ -238763,7 +238763,7 @@ var require_compile = /* @__PURE__ */ __commonJSMin(((exports) => {
   function sameSchemaEnv(s1, s2) {
     return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
   }
-  function resolve2(root, ref) {
+  function resolve4(root, ref) {
     let sch;
     while (typeof (sch = this.refs[ref]) == "string") ref = sch;
     return sch || this.schemas[ref] || resolveSchema.call(this, root, ref);
@@ -239458,7 +239458,7 @@ var require_fast_uri = /* @__PURE__ */ __commonJSMin(((exports, module) => {
     else if (typeof uri === "object") uri = parse3(serialize(uri, options), options);
     return uri;
   }
-  function resolve2(baseURI, relativeURI, options) {
+  function resolve4(baseURI, relativeURI, options) {
     const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
     const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed, malformedPercentEncoding: baseMalformedPercentEncoding, malformedSchemeSpecific: baseMalformedSchemeSpecific, malformedHost: baseMalformedHost, malformedScheme: baseMalformedScheme } = parseWithStatus(baseURI, schemelessOptions);
     const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed, malformedPercentEncoding: relativeMalformedPercentEncoding, malformedSchemeSpecific: relativeMalformedSchemeSpecific, malformedHost: relativeMalformedHost, malformedScheme: relativeMalformedScheme } = parseWithStatus(relativeURI, schemelessOptions);
@@ -239473,41 +239473,41 @@ var require_fast_uri = /* @__PURE__ */ __commonJSMin(((exports, module) => {
     schemelessOptions.skipEscape = true;
     return serialize(resolved, schemelessOptions);
   }
-  function resolveComponent(base, relative2, options, skipNormalization) {
+  function resolveComponent(base, relative3, options, skipNormalization) {
     const target = {};
     if (!skipNormalization) {
       base = parse3(serialize(base, options), options);
-      relative2 = parse3(serialize(relative2, options), options);
+      relative3 = parse3(serialize(relative3, options), options);
     }
     options = options || {};
-    if (!options.tolerant && relative2.scheme) {
-      target.scheme = relative2.scheme;
-      target.userinfo = relative2.userinfo;
-      target.host = relative2.host;
-      target.port = relative2.port;
-      target.path = removeDotSegments(relative2.path || "");
-      target.query = relative2.query;
+    if (!options.tolerant && relative3.scheme) {
+      target.scheme = relative3.scheme;
+      target.userinfo = relative3.userinfo;
+      target.host = relative3.host;
+      target.port = relative3.port;
+      target.path = removeDotSegments(relative3.path || "");
+      target.query = relative3.query;
     } else {
-      if (relative2.userinfo !== void 0 || relative2.host !== void 0 || relative2.port !== void 0) {
-        target.userinfo = relative2.userinfo;
-        target.host = relative2.host;
-        target.port = relative2.port;
-        target.path = removeDotSegments(relative2.path || "");
-        target.query = relative2.query;
+      if (relative3.userinfo !== void 0 || relative3.host !== void 0 || relative3.port !== void 0) {
+        target.userinfo = relative3.userinfo;
+        target.host = relative3.host;
+        target.port = relative3.port;
+        target.path = removeDotSegments(relative3.path || "");
+        target.query = relative3.query;
       } else {
-        if (!relative2.path) {
+        if (!relative3.path) {
           target.path = base.path;
-          if (relative2.query !== void 0) target.query = relative2.query;
+          if (relative3.query !== void 0) target.query = relative3.query;
           else target.query = base.query;
         } else {
-          if (relative2.path[0] === "/") target.path = removeDotSegments(relative2.path);
+          if (relative3.path[0] === "/") target.path = removeDotSegments(relative3.path);
           else {
-            if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) target.path = "/" + relative2.path;
-            else if (!base.path) target.path = relative2.path;
-            else target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative2.path;
+            if ((base.userinfo !== void 0 || base.host !== void 0 || base.port !== void 0) && !base.path) target.path = "/" + relative3.path;
+            else if (!base.path) target.path = relative3.path;
+            else target.path = base.path.slice(0, base.path.lastIndexOf("/") + 1) + relative3.path;
             target.path = removeDotSegments(target.path);
           }
-          target.query = relative2.query;
+          target.query = relative3.query;
         }
         target.userinfo = base.userinfo;
         target.host = base.host;
@@ -239515,7 +239515,7 @@ var require_fast_uri = /* @__PURE__ */ __commonJSMin(((exports, module) => {
       }
       target.scheme = base.scheme;
     }
-    target.fragment = relative2.fragment;
+    target.fragment = relative3.fragment;
     return target;
   }
   function equal(uriA, uriB, options) {
@@ -239740,7 +239740,7 @@ var require_fast_uri = /* @__PURE__ */ __commonJSMin(((exports, module) => {
   const fastUri = {
     SCHEMES,
     normalize,
-    resolve: resolve2,
+    resolve: resolve4,
     resolveComponent,
     equal,
     serialize,
@@ -243611,15 +243611,15 @@ var PerRequestHTTPServerTransport = class {
     };
     if (isJSONRPCRequest(message2)) {
       this._requestId = message2.id;
-      let resolve2;
+      let resolve4;
       let reject;
       const promise2 = new Promise((promiseResolve, promiseReject) => {
-        resolve2 = promiseResolve;
+        resolve4 = promiseResolve;
         reject = promiseReject;
       });
       this._deferredResponse = {
         promise: promise2,
-        resolve: resolve2,
+        resolve: resolve4,
         reject,
         settled: false
       };
@@ -245458,7 +245458,7 @@ var StdioServerTransport = class {
   }
   send(message2) {
     if (this._closed) return Promise.reject(/* @__PURE__ */ new Error("StdioServerTransport is closed"));
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve4, reject) => {
       const json2 = serializeMessage(message2);
       let settled = false;
       const onError = (error62) => {
@@ -245473,14 +245473,14 @@ var StdioServerTransport = class {
         settled = true;
         this._stdout.off("error", onError);
         this._stdout.off("drain", onDrain);
-        resolve2();
+        resolve4();
       };
       this._stdout.once("error", onError);
       if (this._stdout.write(json2)) {
         if (settled) return;
         settled = true;
         this._stdout.off("error", onError);
-        resolve2();
+        resolve4();
       } else if (!settled) this._stdout.once("drain", onDrain);
     });
   }
@@ -245534,14 +245534,14 @@ var StdioConnectionChannel = class {
   */
   async whenRequestsAnswered(timeoutMs) {
     if (this._closed || this._pendingRequests.size === 0) return true;
-    return await new Promise((resolve2) => {
+    return await new Promise((resolve4) => {
       const waiter = () => {
         clearTimeout(timer);
-        resolve2(true);
+        resolve4(true);
       };
       const timer = setTimeout(() => {
         this._drainWaiters = this._drainWaiters.filter((pending) => pending !== waiter);
-        resolve2(false);
+        resolve4(false);
       }, timeoutMs);
       this._drainWaiters.push(waiter);
     });
@@ -245896,11 +245896,11 @@ function G(B, Q, F, V, q) {
 }
 
 // src/server.ts
-import { readFile as readFile4 } from "node:fs/promises";
+import { readFile as readFile5 } from "node:fs/promises";
 
 // src/shared.ts
 var VERSION = "0.7.10";
-var BUILD_ID = true ? "0bb6b0e312" : "development";
+var BUILD_ID = true ? "59d9410cfa" : "development";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,
@@ -245927,9 +245927,9 @@ var emptyState = () => ({
   treeWidth: 270
 });
 
-// src/workspace-files.ts
-import { createHash as createHash2 } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+// src/workspace-definition.ts
+import { readFile, readdir, stat } from "node:fs/promises";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 // src/file-version.ts
 import { extname } from "node:path";
@@ -245982,7 +245982,123 @@ function fileVersion(data, path) {
   };
 }
 
+// src/workspace-definition.ts
+var DefinitionFiles = class {
+  constructor(root, version2, info, prefix, validate2, git) {
+    this.root = root;
+    this.version = version2;
+    this.info = info;
+    this.prefix = prefix;
+    this.validate = validate2;
+    this.git = git;
+  }
+  tree;
+  relative(name) {
+    const path = relative(this.root, resolve(name));
+    return path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path) ? null : path;
+  }
+  sourcePath(path) {
+    const old = this.info.changes[path]?.oldPath;
+    if (this.version !== "head" || !old) return path;
+    if (!old.startsWith(this.prefix))
+      throw new Error("HEAD \u6587\u4EF6\u539F\u8DEF\u5F84\u8D85\u51FA\u5F53\u524D\u5DE5\u4F5C\u76EE\u5F55");
+    return old.slice(this.prefix.length);
+  }
+  displayPath(path) {
+    if (this.version === "head") {
+      for (const [current, entry] of Object.entries(this.info.changes))
+        if (entry.oldPath === this.prefix + path) return current;
+    }
+    return path;
+  }
+  async headTree() {
+    if (!this.info.head) throw new Error("\u5F53\u524D\u9879\u76EE\u6CA1\u6709 HEAD \u7248\u672C");
+    return this.tree ??= this.git([
+      "ls-tree",
+      "-rz",
+      "--full-tree",
+      this.info.head
+    ]).then((buffer) => {
+      const entries = /* @__PURE__ */ new Map();
+      for (const record2 of buffer.toString().split("\0")) {
+        const tab = record2.indexOf("	");
+        if (tab < 0) continue;
+        const path = record2.slice(tab + 1);
+        const [mode, type, object2] = record2.slice(0, tab).split(" ");
+        if (type === "blob" && path.startsWith(this.prefix))
+          entries.set(path.slice(this.prefix.length), { mode, object: object2 });
+      }
+      return entries;
+    });
+  }
+  async directories(name) {
+    const path = this.relative(name);
+    if (path === null) return void 0;
+    if (this.version === "head") {
+      const prefix = path ? path + "/" : "";
+      const children = /* @__PURE__ */ new Set();
+      let exists = !path;
+      for (const file2 of (await this.headTree()).keys()) {
+        if (!file2.startsWith(prefix)) continue;
+        exists = true;
+        const rest = file2.slice(prefix.length);
+        if (rest.includes("/")) children.add(rest.split("/")[0]);
+      }
+      return exists ? [...children] : void 0;
+    }
+    try {
+      const target = await this.validate(path);
+      if (!(await stat(target)).isDirectory()) return void 0;
+      return (await readdir(target, { withFileTypes: true })).filter((entry) => entry.isDirectory() || entry.isSymbolicLink()).map((entry) => entry.name);
+    } catch (error62) {
+      if (["ENOENT", "ENOTDIR"].includes(
+        error62.code ?? ""
+      ))
+        return void 0;
+      throw error62;
+    }
+  }
+  async read(name) {
+    const path = this.relative(name);
+    if (path === null || !path) return void 0;
+    let data;
+    if (this.version === "head") {
+      const entry = (await this.headTree()).get(path);
+      if (!entry) return void 0;
+      if (entry.mode === "120000")
+        throw new Error(`HEAD \u4F9D\u8D56\u662F\u7B26\u53F7\u94FE\u63A5\uFF0C\u65E0\u6CD5\u89E3\u6790\uFF1A${path}`);
+      const size = Number(
+        (await this.git(["cat-file", "-s", entry.object])).toString()
+      );
+      if (size > MAX_PREVIEW_BYTES)
+        throw new Error(`\u4F9D\u8D56\u6587\u4EF6\u8D85\u8FC7 12 MB\uFF1A${path}`);
+      data = await this.git(["cat-file", "blob", entry.object]);
+    } else {
+      try {
+        const target = await this.validate(path);
+        const info = await stat(target);
+        if (!info.isFile()) return void 0;
+        if (info.size > MAX_PREVIEW_BYTES)
+          throw new Error(`\u4F9D\u8D56\u6587\u4EF6\u8D85\u8FC7 12 MB\uFF1A${path}`);
+        data = await readFile(target);
+      } catch (error62) {
+        if (["ENOENT", "ENOTDIR"].includes(
+          error62.code ?? ""
+        ))
+          return void 0;
+        throw error62;
+      }
+    }
+    const version2 = fileVersion(data, path);
+    if (version2.binary || version2.tooLarge)
+      throw new Error(`\u4F9D\u8D56\u4E0D\u662F\u53EF\u8BFB\u53D6\u7684\u6587\u672C\u6587\u4EF6\uFF1A${path}`);
+    return version2.text.replace(/\r\n?/g, "\n");
+  }
+};
+
 // src/workspace-files.ts
+import { createHash as createHash2 } from "node:crypto";
+import { readFile as readFile2, stat as stat2 } from "node:fs/promises";
 var WorkspaceFiles = class {
   constructor(resolvePath, git) {
     this.resolvePath = resolvePath;
@@ -245996,7 +246112,7 @@ var WorkspaceFiles = class {
     let currentVersion = missing();
     try {
       const target = await this.resolvePath(path);
-      const info = await stat(target, { bigint: true });
+      const info = await stat2(target, { bigint: true });
       if (!info.isFile()) throw new Error("\u8BF7\u9009\u62E9\u6587\u4EF6");
       currentKey = [
         info.dev,
@@ -246017,7 +246133,7 @@ var WorkspaceFiles = class {
           tooLarge: true
         };
       } else {
-        current = await readFile(target);
+        current = await readFile2(target);
         currentVersion = fileVersion(current, path);
       }
     } catch (error62) {
@@ -246135,10 +246251,10 @@ async function searchWorkspace(root, query, mode, includeIgnored) {
 import { execFile, spawn as spawn2 } from "node:child_process";
 import { promisify } from "node:util";
 import {
-  readdir,
-  readFile as readFile2,
+  readdir as readdir2,
+  readFile as readFile3,
   realpath,
-  stat as stat2,
+  stat as stat3,
   lstat,
   mkdir,
   rename,
@@ -246149,11 +246265,11 @@ import {
   basename,
   dirname,
   extname as extname2,
-  isAbsolute,
+  isAbsolute as isAbsolute2,
   join as join2,
-  relative,
-  resolve,
-  sep
+  relative as relative2,
+  resolve as resolve2,
+  sep as sep2
 } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -246171,8 +246287,8 @@ var filenameOrder = new Intl.Collator("en", {
   caseFirst: "upper"
 });
 var inside = (root, path) => {
-  const rel = relative(root, path);
-  return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
+  const rel = relative2(root, path);
+  return rel !== ".." && !rel.startsWith(`..${sep2}`) && !isAbsolute2(rel);
 };
 var errorCode = (error62) => error62.code;
 var message = (error62) => error62 instanceof Error ? error62.message : String(error62);
@@ -246184,9 +246300,9 @@ var Workspace = class _Workspace {
   info;
   prefix = "";
   static async bind(root) {
-    if (!isAbsolute(root)) throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u5FC5\u987B\u662F\u7EDD\u5BF9\u8DEF\u5F84");
+    if (!isAbsolute2(root)) throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u5FC5\u987B\u662F\u7EDD\u5BF9\u8DEF\u5F84");
     const resolved = await realpath(root);
-    if (!(await stat2(resolved)).isDirectory())
+    if (!(await stat3(resolved)).isDirectory())
       throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u5FC5\u987B\u662F\u5B9E\u9645\u5B58\u5728\u7684\u76EE\u5F55");
     const workspace = new _Workspace(resolved);
     await workspace.refreshInfo();
@@ -246219,7 +246335,7 @@ var Workspace = class _Workspace {
   }
   async refreshInfo() {
     const changes = /* @__PURE__ */ Object.create(null);
-    this.info = {
+    const info = {
       root: this.root,
       name: basename(this.root),
       branch: null,
@@ -246228,14 +246344,17 @@ var Workspace = class _Workspace {
       git: false,
       changes
     };
+    let prefix = "";
     try {
-      this.prefix = (await this.git(["rev-parse", "--show-prefix"])).toString().trim();
+      prefix = (await this.git(["rev-parse", "--show-prefix"])).toString().trim();
     } catch {
-      return this.info;
+      this.prefix = prefix;
+      this.info = info;
+      return info;
     }
-    this.info.git = true;
-    this.info.head = await this.git(["rev-parse", "--verify", "HEAD"]).then((b) => b.toString().trim()).catch(() => null);
-    this.info.branch = await this.git(["symbolic-ref", "--short", "HEAD"]).then((b) => b.toString().trim()).catch(() => this.info.head?.slice(0, 8) ?? "\u672A\u63D0\u4EA4");
+    info.git = true;
+    info.head = await this.git(["rev-parse", "--verify", "HEAD"]).then((b) => b.toString().trim()).catch(() => null);
+    info.branch = await this.git(["symbolic-ref", "--short", "HEAD"]).then((b) => b.toString().trim()).catch(() => info.head?.slice(0, 8) ?? "\u672A\u63D0\u4EA4");
     const [gitDir, commonDir] = await Promise.all(
       ["--git-dir", "--git-common-dir"].map(
         (arg) => this.git(["rev-parse", "--path-format=absolute", arg]).then(
@@ -246243,7 +246362,7 @@ var Workspace = class _Workspace {
         )
       )
     );
-    this.info.worktree = gitDir !== commonDir;
+    info.worktree = gitDir !== commonDir;
     const parts = (await this.git([
       "status",
       "--porcelain=v1",
@@ -246256,20 +246375,22 @@ var Workspace = class _Workspace {
       const status = record2.slice(0, 2);
       const repoPath = record2.slice(3);
       const original = /[RC]/.test(status) ? parts[++i] : void 0;
-      if (!repoPath.startsWith(this.prefix)) continue;
-      const path = repoPath.slice(this.prefix.length);
+      if (!repoPath.startsWith(prefix)) continue;
+      const path = repoPath.slice(prefix.length);
       if (path)
         changes[path] = {
           status: status.includes("?") ? "A" : status.includes("U") ? "U" : status.includes("R") ? "R" : status.includes("D") ? "D" : status.includes("A") ? "A" : "M",
           ...original ? { oldPath: original } : {}
         };
     }
-    return this.info;
+    this.prefix = prefix;
+    this.info = info;
+    return info;
   }
   async path(path, leafMayNotExist = false, followLeaf = true) {
-    if (isAbsolute(path) || path.includes("\0"))
+    if (isAbsolute2(path) || path.includes("\0"))
       throw new Error("\u8DEF\u5F84\u5FC5\u987B\u4F4D\u4E8E\u5F53\u524D\u5DE5\u4F5C\u76EE\u5F55\u5185");
-    const candidate = resolve(this.root, path || ".");
+    const candidate = resolve2(this.root, path || ".");
     if (!inside(this.root, candidate)) throw new Error("\u8DEF\u5F84\u8D85\u51FA\u5F53\u524D\u5DE5\u4F5C\u76EE\u5F55");
     if (candidate === this.root) return candidate;
     let ancestor = followLeaf && !leafMayNotExist ? candidate : dirname(candidate);
@@ -246286,9 +246407,9 @@ var Workspace = class _Workspace {
     }
     if (!inside(this.root, actual)) throw new Error("\u94FE\u63A5\u6307\u5411\u5DE5\u4F5C\u76EE\u5F55\u4E4B\u5916");
     let current = this.root;
-    const parts = relative(this.root, candidate).split(sep);
+    const parts = relative2(this.root, candidate).split(sep2);
     for (const [index, name] of parts.entries()) {
-      const names = await readdir(current);
+      const names = await readdir2(current);
       if (!names.includes(name)) {
         const newLeaf = leafMayNotExist && !followLeaf && index === parts.length - 1;
         const caseAlias = names.some(
@@ -246322,7 +246443,7 @@ var Workspace = class _Workspace {
       } catch (error62) {
         if (errorCode(error62) !== "ENOENT") throw error62;
       }
-      return readdir(directory, { withFileTypes: true });
+      return readdir2(directory, { withFileTypes: true });
     })().catch((error62) => {
       if (errorCode(error62) === "ENOENT" && Object.keys(this.info.changes).some(
         (changed) => changed.startsWith(`${path}/`)
@@ -246349,7 +246470,7 @@ var Workspace = class _Workspace {
     for (const node2 of nodes.values()) {
       node2.ignored = ignored.has(node2.path);
       if (node2.symlink)
-        node2.directory = await this.path(node2.path).then((p) => stat2(p)).then((s) => s.isDirectory()).catch(() => false);
+        node2.directory = await this.path(node2.path).then((p) => stat3(p)).then((s) => s.isDirectory()).catch(() => false);
     }
     const prefix = path ? `${path}/` : "";
     for (const [entryPath, entry] of Object.entries(this.info.changes)) {
@@ -246385,6 +246506,19 @@ var Workspace = class _Workspace {
     const object2 = this.info.git && this.info.head ? `${this.info.head}:${entry?.oldPath ?? this.prefix + path}` : null;
     return this.files.read(path, object2, !!entry, force);
   }
+  definitionFiles(version2) {
+    return new DefinitionFiles(
+      this.root,
+      version2,
+      this.info,
+      this.prefix,
+      async (path) => {
+        await this.path(path, true);
+        return this.path(path);
+      },
+      (args) => this.git(args)
+    );
+  }
   async snapshot(directories, paths, knownFiles = {}) {
     await this.refreshInfo();
     const snapshot = {
@@ -246416,7 +246550,7 @@ var Workspace = class _Workspace {
   }
   async reference(path) {
     const absolutePath = await this.path(path);
-    const info = await stat2(absolutePath);
+    const info = await stat3(absolutePath);
     if (!info.isFile() && !info.isDirectory())
       throw new Error("\u53EA\u80FD\u5F15\u7528\u6587\u4EF6\u6216\u76EE\u5F55");
     return { absolutePath, directory: info.isDirectory() };
@@ -246425,7 +246559,7 @@ var Workspace = class _Workspace {
     return searchWorkspace(this.root, query, mode, includeIgnored);
   }
   async mutate(action, path, destination) {
-    if (!path || resolve(this.root, path) === this.root)
+    if (!path || resolve2(this.root, path) === this.root)
       throw new Error("\u4E0D\u80FD\u5BF9\u5DE5\u4F5C\u76EE\u5F55\u672C\u8EAB\u6267\u884C\u6B64\u64CD\u4F5C");
     const target = await this.path(
       path,
@@ -246481,22 +246615,22 @@ var Workspace = class _Workspace {
         force: false,
         errorOnExist: true
       });
-      return relative(this.root, dest);
+      return relative2(this.root, dest);
     }
     try {
       const existing = await lstat(dest);
       const sameEntry = sourceInfo.dev === existing.dev && sourceInfo.ino === existing.ino;
-      const caseOnly = dirname(target) === dirname(dest) && basename(target).toLowerCase() === basename(dest).toLowerCase() && !(await readdir(dirname(dest))).includes(basename(dest));
+      const caseOnly = dirname(target) === dirname(dest) && basename(target).toLowerCase() === basename(dest).toLowerCase() && !(await readdir2(dirname(dest))).includes(basename(dest));
       if (sameEntry && caseOnly) {
         await rename(target, dest);
-        return relative(this.root, dest);
+        return relative2(this.root, dest);
       }
       throw new Error("\u76EE\u6807\u5DF2\u5B58\u5728\uFF0C\u8BF7\u4F7F\u7528\u5176\u4ED6\u540D\u79F0");
     } catch (error62) {
       if (errorCode(error62) !== "ENOENT") throw error62;
     }
     await rename(target, dest);
-    return relative(this.root, dest);
+    return relative2(this.root, dest);
   }
   get statePath() {
     return join2(
@@ -246506,7 +246640,7 @@ var Workspace = class _Workspace {
   }
   async loadState() {
     try {
-      return JSON.parse(await readFile2(this.statePath, "utf8"));
+      return JSON.parse(await readFile3(this.statePath, "utf8"));
     } catch {
       return emptyState();
     }
@@ -246521,7 +246655,7 @@ var Workspace = class _Workspace {
 
 // src/entrypoint.ts
 import { fileURLToPath as fileURLToPath2 } from "node:url";
-import { isAbsolute as isAbsolute2 } from "node:path";
+import { isAbsolute as isAbsolute3 } from "node:path";
 async function entrypointDirectory(explicit, metadata, listRoots) {
   if (explicit) return explicit;
   let turn = {};
@@ -246537,7 +246671,7 @@ async function entrypointDirectory(explicit, metadata, listRoots) {
     }
   }
   const cwd = metadata?.cwd ?? metadata?.workingDirectory ?? turn.cwd ?? turn.workingDirectory ?? turn.working_directory;
-  if (typeof cwd === "string" && isAbsolute2(cwd)) return cwd;
+  if (typeof cwd === "string" && isAbsolute3(cwd)) return cwd;
   if (listRoots) {
     try {
       const roots = await listRoots();
@@ -246554,7 +246688,7 @@ import { spawn as spawn3, execFile as execFile2 } from "node:child_process";
 import { createInterface } from "node:readline";
 import { promisify as promisify2 } from "node:util";
 import { realpath as realpath2, lstat as lstat2 } from "node:fs/promises";
-import { isAbsolute as isAbsolute3, join as join3 } from "node:path";
+import { isAbsolute as isAbsolute4, join as join3 } from "node:path";
 var projectPage = external_exports.object({
   data: external_exports.array(
     external_exports.object({
@@ -246581,7 +246715,7 @@ async function registeredProjects(signal) {
   const projects = [];
   let timer;
   try {
-    return await new Promise((resolve2, reject) => {
+    return await new Promise((resolve4, reject) => {
       timer = setTimeout(
         () => reject(new Error("Codex \u9879\u76EE\u5217\u8868\u8BFB\u53D6\u8D85\u65F6")),
         15e3
@@ -246617,7 +246751,7 @@ async function registeredProjects(signal) {
               { limit: 100, cursor: page.nextCursor },
               ++requestId
             );
-          else resolve2(projects);
+          else resolve4(projects);
         } catch (error62) {
           reject(error62);
         }
@@ -246639,7 +246773,7 @@ async function registeredProjects(signal) {
   }
 }
 async function projectForDirectory(path, projects, projectId, signal) {
-  if (!isAbsolute3(path)) throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u5FC5\u987B\u662F\u7EDD\u5BF9\u8DEF\u5F84");
+  if (!isAbsolute4(path)) throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u5FC5\u987B\u662F\u7EDD\u5BF9\u8DEF\u5F84");
   const root = await realpath2(path);
   const candidates = projects.filter(
     (project) => projectId === void 0 || project.id === projectId
@@ -246679,50 +246813,166 @@ async function projectForDirectory(path, projects, projectId, signal) {
 
 // src/definition.ts
 var import_typescript = __toESM(require_typescript(), 1);
-function definitionAt(path, text, position) {
+import { dirname as dirname2, join as join4, resolve as resolve3 } from "node:path";
+import { createHash as createHash4 } from "node:crypto";
+async function definitionAt(files, path, text, position, signal) {
   if (!/\.(?:[cm]?[jt]s|[jt]sx)$/i.test(path))
     throw new Error(
-      "\u5B9A\u4E49\u8DF3\u8F6C\u76EE\u524D\u4EC5\u652F\u6301 JavaScript / TypeScript\uFF08\u542B JSX\u3001TSX\uFF09\u4E2D\u7684\u540C\u6587\u4EF6\u58F0\u660E"
+      "\u5B9A\u4E49\u8DF3\u8F6C\u76EE\u524D\u4EC5\u652F\u6301 JavaScript / TypeScript\uFF08\u542B JSX\u3001TSX\uFF09"
     );
   if (!Number.isInteger(position) || position < 0 || position > text.length)
     throw new Error("\u4EE3\u7801\u4F4D\u7F6E\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u5B9A\u4F4D\u540E\u518D\u8DF3\u8F6C");
-  const file2 = "/" + path;
-  const snapshot = import_typescript.default.ScriptSnapshot.fromString(text);
-  const service = import_typescript.default.createLanguageService(
-    {
-      getCompilationSettings: () => ({
-        allowJs: true,
-        noLib: true,
-        noResolve: true,
-        jsx: import_typescript.default.JsxEmit.Preserve,
-        target: import_typescript.default.ScriptTarget.Latest
-      }),
-      getScriptFileNames: () => [file2],
-      getScriptVersion: () => "0",
-      getScriptSnapshot: (name) => name === file2 ? snapshot : void 0,
-      getCurrentDirectory: () => "/",
-      getDefaultLibFileName: () => "/lib.d.ts",
-      fileExists: (name) => name === file2,
-      readFile: (name) => name === file2 ? text : void 0,
-      useCaseSensitiveFileNames: () => true
-    },
-    import_typescript.default.createDocumentRegistry(true)
-  );
+  const file2 = resolve3(files.root, files.sourcePath(path));
+  if (files.relative(file2) === null) throw new Error("\u8DEF\u5F84\u8D85\u51FA\u5F53\u524D\u5DE5\u4F5C\u76EE\u5F55");
+  const contents = /* @__PURE__ */ new Map([[file2, text]]);
+  const pending = /* @__PURE__ */ new Set();
+  const directories = /* @__PURE__ */ new Map();
+  const pendingDirectories = /* @__PURE__ */ new Set();
+  const directory = (name) => {
+    name = resolve3(name);
+    if (files.relative(name) === null) return void 0;
+    if (!directories.has(name)) pendingDirectories.add(name);
+    return directories.get(name);
+  };
+  let bytes = Buffer.byteLength(text);
+  const read = (name) => {
+    name = resolve3(name);
+    if (files.relative(name) === null) return void 0;
+    if (!contents.has(name)) pending.add(name);
+    return contents.get(name);
+  };
+  const host = {
+    useCaseSensitiveFileNames: true,
+    fileExists: (name) => read(name) !== void 0,
+    readFile: read,
+    readDirectory: () => []
+  };
+  const registry2 = import_typescript.default.createDocumentRegistry(true);
+  let previousService;
   try {
-    const definition = service.getDefinitionAtPosition(file2, position)?.find((item) => item.fileName === file2);
-    return definition ? {
-      from: definition.textSpan.start,
-      to: definition.textSpan.start + definition.textSpan.length
-    } : null;
+    for (let pass = 0; pass < 100; pass++) {
+      signal?.throwIfAborted();
+      let config2;
+      for (let directory2 = dirname2(file2); ; directory2 = dirname2(directory2)) {
+        config2 = ["tsconfig.json", "jsconfig.json"].map((name) => join4(directory2, name)).find((name) => host.fileExists(name));
+        if (config2 || directory2 === files.root) break;
+      }
+      const configErrors = [];
+      const parseConfig = (name) => import_typescript.default.getParsedCommandLineOfConfigFile(
+        name,
+        { noEmit: true },
+        {
+          ...host,
+          getCurrentDirectory: () => files.root,
+          onUnRecoverableConfigFileDiagnostic: (error62) => configErrors.push(error62)
+        }
+      );
+      const parsed = config2 ? parseConfig(config2) : void 0;
+      const options = {
+        target: import_typescript.default.ScriptTarget.Latest,
+        module: import_typescript.default.ModuleKind.ESNext,
+        moduleResolution: import_typescript.default.ModuleResolutionKind.Bundler,
+        jsx: import_typescript.default.JsxEmit.Preserve,
+        ...parsed?.options,
+        allowJs: true,
+        noResolve: false
+      };
+      const service = import_typescript.default.createLanguageService(
+        {
+          ...host,
+          useCaseSensitiveFileNames: () => true,
+          readDirectory: () => [],
+          getCompilationSettings: () => options,
+          getScriptFileNames: () => [file2],
+          getProjectReferences: () => parsed?.projectReferences,
+          getParsedCommandLine: (name) => parseConfig(name),
+          getScriptVersion: () => "0",
+          getScriptSnapshot: (name) => {
+            const value = read(name);
+            return value === void 0 ? void 0 : import_typescript.default.ScriptSnapshot.fromString(value);
+          },
+          getCurrentDirectory: () => files.root,
+          getDefaultLibFileName: () => join4(
+            files.root,
+            "node_modules/typescript/lib",
+            import_typescript.default.getDefaultLibFileName(options)
+          ),
+          directoryExists: (name) => directory(name) !== void 0,
+          getDirectories: (name) => directory(name) ?? []
+        },
+        registry2
+      );
+      let definitions;
+      try {
+        definitions = service.getDefinitionAtPosition(file2, position);
+      } catch (error62) {
+        service.dispose();
+        throw error62;
+      }
+      previousService?.dispose();
+      previousService = service;
+      if (pending.size || pendingDirectories.size) {
+        if (contents.size + pending.size + directories.size + pendingDirectories.size > 1e5)
+          throw new Error("\u4F9D\u8D56\u89E3\u6790\u8D85\u8FC7 100000 \u4E2A\u5019\u9009\u8DEF\u5F84\uFF0C\u8BF7\u7F29\u5C0F\u9879\u76EE\u8303\u56F4");
+        const directoryNames = [...pendingDirectories];
+        for (let start = 0; start < directoryNames.length; start += 16) {
+          signal?.throwIfAborted();
+          await Promise.all(
+            directoryNames.slice(start, start + 16).map(async (name) => {
+              directories.set(name, await files.directories(name));
+            })
+          );
+        }
+        pendingDirectories.clear();
+        const names = [...pending];
+        pending.clear();
+        for (let start = 0; start < names.length; start += 16) {
+          signal?.throwIfAborted();
+          await Promise.all(
+            names.slice(start, start + 16).map(async (name) => {
+              const value = await files.read(name);
+              bytes += Buffer.byteLength(value ?? "");
+              if (bytes > 64 * 1024 * 1024)
+                throw new Error("\u4F9D\u8D56\u89E3\u6790\u5185\u5BB9\u8D85\u8FC7 64 MB\uFF0C\u8BF7\u7F29\u5C0F\u9879\u76EE\u8303\u56F4");
+              contents.set(name, value);
+            })
+          );
+        }
+        continue;
+      }
+      const errors = [...configErrors, ...parsed?.errors ?? []].filter(
+        (error62) => ![18002, 18003].includes(error62.code)
+      );
+      if (errors.length)
+        throw new Error(
+          `\u65E0\u6CD5\u89E3\u6790\u9879\u76EE\u914D\u7F6E\uFF1A${import_typescript.default.flattenDiagnosticMessageText(errors[0].messageText, "\n")}`
+        );
+      const definition = definitions?.find(
+        (item) => item.kind !== import_typescript.default.ScriptElementKind.alias
+      );
+      if (!definition) return null;
+      const targetText = contents.get(resolve3(definition.fileName));
+      const targetPath = files.relative(definition.fileName);
+      if (targetText === void 0 || targetPath === null) return null;
+      return {
+        path: files.displayPath(targetPath),
+        version: files.version,
+        revision: createHash4("sha256").update(targetText).digest("hex"),
+        ...files.version === "head" ? { head: files.info.head } : {},
+        from: definition.textSpan.start,
+        to: definition.textSpan.start + definition.textSpan.length
+      };
+    }
+    throw new Error("\u4F9D\u8D56\u5C42\u7EA7\u8D85\u8FC7\u89E3\u6790\u4E0A\u9650\uFF0C\u8BF7\u68C0\u67E5\u5FAA\u73AF\u914D\u7F6E\u6216\u7F29\u5C0F\u9879\u76EE\u8303\u56F4");
   } finally {
-    service.dispose();
+    previousService?.dispose();
   }
 }
 
 // src/bindings.ts
 import { randomUUID as randomUUID2 } from "node:crypto";
-import { mkdir as mkdir2, readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
-import { dirname as dirname2, join as join4 } from "node:path";
+import { mkdir as mkdir2, readFile as readFile4, writeFile as writeFile2 } from "node:fs/promises";
+import { dirname as dirname3, join as join5 } from "node:path";
 var recordSchema = external_exports.object({
   root: external_exports.string(),
   projectId: external_exports.string(),
@@ -246738,7 +246988,7 @@ var BindingError = class extends Error {
 var expired = () => new BindingError();
 var bindingPath = (id) => {
   if (!external_exports.uuid().safeParse(id).success) throw expired();
-  return join4(dataDirectory(), "bindings", `${id}.json`);
+  return join5(dataDirectory(), "bindings", `${id}.json`);
 };
 var checkThread = (bound, current) => {
   if (bound && current && bound !== current)
@@ -246755,7 +247005,7 @@ async function bindWorkspace(workspace, projectId, thread) {
   });
   const id = randomUUID2();
   const path = bindingPath(id);
-  await mkdir2(dirname2(path), { recursive: true, mode: 448 });
+  await mkdir2(dirname3(path), { recursive: true, mode: 448 });
   await writeFile2(path, JSON.stringify(record2), { flag: "wx", mode: 384 });
   bindings.set(id, { workspace, thread: record2.thread });
   return id;
@@ -246763,7 +247013,7 @@ async function bindWorkspace(workspace, projectId, thread) {
 async function workspaceFor(id, thread, signal) {
   let binding = bindings.get(id);
   if (!binding) {
-    const record2 = await readFile3(bindingPath(id), "utf8").then((text) => recordSchema.parse(JSON.parse(text))).catch((error62) => {
+    const record2 = await readFile4(bindingPath(id), "utf8").then((text) => recordSchema.parse(JSON.parse(text))).catch((error62) => {
       const code = error62.code;
       if (code && code !== "ENOENT") throw error62;
       throw expired();
@@ -246858,7 +247108,7 @@ serveStdio(() => {
         {
           uri: resourceUri,
           mimeType: L,
-          text: await readFile4(
+          text: await readFile5(
             new URL("./index.html", import.meta.url),
             "utf8"
           ),
@@ -246983,6 +247233,7 @@ serveStdio(() => {
         version: external_exports.enum(["head", "current"]).optional(),
         position: external_exports.number().int().nonnegative().optional(),
         revision: external_exports.string().length(64).optional(),
+        head: external_exports.string().regex(/^[a-f0-9]{40,64}$/).optional(),
         path: pathSchema.optional(),
         directories: external_exports.array(pathSchema).max(2e3).optional(),
         paths: external_exports.array(pathSchema).max(2).optional(),
@@ -247013,6 +247264,11 @@ serveStdio(() => {
           return success2(await workspace.reference(args.path ?? ""));
         if (args.action === "definition") {
           await workspace.refreshInfo();
+          if (args.version === "head" && args.head !== workspace.info.head)
+            throw new Error("HEAD \u5DF2\u53D8\u5316\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u5B9A\u4E49\u8DF3\u8F6C");
+          const definitions = workspace.definitionFiles(
+            args.version ?? "current"
+          );
           const file2 = await workspace.file(args.path ?? "", true);
           const version2 = file2[args.version ?? "current"];
           if (!version2.exists || version2.binary || version2.tooLarge)
@@ -247020,16 +247276,23 @@ serveStdio(() => {
           if (!args.revision || args.revision !== version2.revision)
             throw new Error("\u6587\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u5B9A\u4E49\u8DF3\u8F6C");
           return success2({
-            definition: definitionAt(
+            definition: await definitionAt(
+              definitions,
               file2.path,
               version2.text.replace(/\r\n?/g, "\n"),
-              args.position ?? 0
+              args.position ?? 0,
+              context.mcpReq.signal
             )
           });
         }
         if (args.action === "file") {
           await workspace.refreshInfo();
-          return success2(await workspace.file(args.path ?? ""));
+          if (args.version === "head" && args.head !== workspace.info.head)
+            throw new Error("HEAD \u5DF2\u53D8\u5316\uFF0C\u8BF7\u5237\u65B0\u540E\u91CD\u8BD5\u8DF3\u8F6C");
+          const file2 = await workspace.file(args.path ?? "", !!args.revision);
+          if (args.revision && file2[args.version ?? "current"].revision !== args.revision)
+            throw new Error("\u76EE\u6807\u6587\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u8BF7\u91CD\u65B0\u6267\u884C\u5B9A\u4E49\u8DF3\u8F6C");
+          return success2(file2);
         }
         return success2(
           await workspace.search(

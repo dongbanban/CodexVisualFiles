@@ -1,3 +1,4 @@
+import { DefinitionFiles } from "./workspace-definition.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import { searchWorkspace } from "./workspace-search.js";
 import { execFile, spawn } from "node:child_process";
@@ -34,6 +35,7 @@ import {
   type Snapshot,
   type TreeEntry,
   type WorkspaceInfo,
+  type Version,
 } from "./shared.js";
 
 const exec = promisify(execFile);
@@ -98,7 +100,7 @@ export class Workspace {
   }
   async refreshInfo() {
     const changes: Record<string, GitEntry> = Object.create(null);
-    this.info = {
+    const info: WorkspaceInfo = {
       root: this.root,
       name: basename(this.root),
       branch: null,
@@ -107,20 +109,23 @@ export class Workspace {
       git: false,
       changes,
     };
+    let prefix = "";
     try {
-      this.prefix = (await this.git(["rev-parse", "--show-prefix"]))
+      prefix = (await this.git(["rev-parse", "--show-prefix"]))
         .toString()
         .trim();
     } catch {
-      return this.info;
+      this.prefix = prefix;
+      this.info = info;
+      return info;
     }
-    this.info.git = true;
-    this.info.head = await this.git(["rev-parse", "--verify", "HEAD"])
+    info.git = true;
+    info.head = await this.git(["rev-parse", "--verify", "HEAD"])
       .then((b) => b.toString().trim())
       .catch(() => null);
-    this.info.branch = await this.git(["symbolic-ref", "--short", "HEAD"])
+    info.branch = await this.git(["symbolic-ref", "--short", "HEAD"])
       .then((b) => b.toString().trim())
-      .catch(() => this.info.head?.slice(0, 8) ?? "未提交");
+      .catch(() => info.head?.slice(0, 8) ?? "未提交");
     const [gitDir, commonDir] = await Promise.all(
       ["--git-dir", "--git-common-dir"].map((arg) =>
         this.git(["rev-parse", "--path-format=absolute", arg]).then((b) =>
@@ -128,7 +133,7 @@ export class Workspace {
         ),
       ),
     );
-    this.info.worktree = gitDir !== commonDir;
+    info.worktree = gitDir !== commonDir;
     const parts = (
       await this.git([
         "status",
@@ -145,8 +150,8 @@ export class Workspace {
       const status = record.slice(0, 2);
       const repoPath = record.slice(3);
       const original = /[RC]/.test(status) ? parts[++i] : undefined;
-      if (!repoPath.startsWith(this.prefix)) continue;
-      const path = repoPath.slice(this.prefix.length);
+      if (!repoPath.startsWith(prefix)) continue;
+      const path = repoPath.slice(prefix.length);
       if (path)
         changes[path] = {
           status: status.includes("?")
@@ -163,7 +168,9 @@ export class Workspace {
           ...(original ? { oldPath: original } : {}),
         };
     }
-    return this.info;
+    this.prefix = prefix;
+    this.info = info;
+    return info;
   }
   async path(path: string, leafMayNotExist = false, followLeaf = true) {
     if (isAbsolute(path) || path.includes("\0"))
@@ -307,6 +314,19 @@ export class Workspace {
         ? `${this.info.head}:${entry?.oldPath ?? this.prefix + path}`
         : null;
     return this.files.read(path, object, !!entry, force);
+  }
+  definitionFiles(version: Version) {
+    return new DefinitionFiles(
+      this.root,
+      version,
+      this.info,
+      this.prefix,
+      async (path) => {
+        await this.path(path, true);
+        return this.path(path);
+      },
+      (args) => this.git(args),
+    );
   }
   async snapshot(
     directories: string[],

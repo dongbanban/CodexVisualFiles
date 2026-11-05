@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Folder, FolderOpen, RefreshCw } from "lucide-react";
 import { type Binding, type LocalProject } from "../shared.js";
 import { Button } from "./components/ui/button.js";
@@ -18,31 +18,41 @@ import { Toaster } from "./components/ui/sonner.js";
 import { toast } from "sonner";
 import { ThemeProvider } from "next-themes";
 import { cn } from "cn";
-import { IconButton } from "./chrome.js";
+import { BuildInfo, IconButton } from "./chrome.js";
 import { initialBinding, bridge, rpc, onBinding } from "./bridge.js";
 import { errorText, base } from "./file-utils.js";
 import { WorkspacePanel } from "./WorkspacePanel.js";
 
 export function Root() {
-  const [binding, setBinding] = useState(initialBinding);
+  const [binding, setBinding] = useState<Binding | null>(null);
   const [dark, setDark] = useState(bridge.getHostContext()?.theme === "dark");
   const [directoryOpen, setDirectoryOpen] = useState(!initialBinding?.root);
   const [projects, setProjects] = useState<LocalProject[]>([]);
   const [projectQuery, setProjectQuery] = useState("");
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectError, setProjectError] = useState("");
+  const [openError, setOpenError] = useState("");
   const [reload, setReload] = useState(0);
   const [opening, setOpening] = useState(false);
+  const requestId = useRef(0);
   useEffect(() => {
-    const stopReceiving = onBinding((data) => {
-      setBinding(data);
-      if (data.root) setDirectoryOpen(false);
-    });
+    const receive = (data: Binding) => {
+      if (data.root) void openWorkspace(data.root, data.projectId);
+      else {
+        requestId.current++;
+        setOpening(false);
+        setBinding(data);
+        setDirectoryOpen(true);
+      }
+    };
+    const stopReceiving = onBinding(receive);
+    if (initialBinding) receive(initialBinding);
     const theme = (context: { theme?: string }) => {
       if (context.theme) setDark(context.theme === "dark");
     };
     bridge.addEventListener("hostcontextchanged", theme);
     return () => {
+      requestId.current++;
       stopReceiving();
       bridge.removeEventListener("hostcontextchanged", theme);
     };
@@ -70,22 +80,29 @@ export function Root() {
   }, [directoryOpen, reload]);
   const chooseWorkspace = () => {
     setProjectQuery("");
+    setOpenError("");
     setDirectoryOpen(true);
   };
-  const openWorkspace = async (path: string, projectId: string) => {
-    if (opening) return;
+  const openWorkspace = async (path: string, projectId?: string) => {
+    const request = ++requestId.current;
     setOpening(true);
+    setOpenError("");
     try {
-      const data = await rpc<Binding>("open_visualfiles", {
+      const data = await rpc<{ binding: Binding }>("visualfiles_projects", {
+        action: "open",
         workingDirectory: path,
         projectId,
       });
-      setBinding(data);
+      if (request !== requestId.current) return;
+      setBinding(data.binding);
       setDirectoryOpen(false);
     } catch (error) {
+      if (request !== requestId.current) return;
+      setDirectoryOpen(true);
+      setOpenError(errorText(error));
       toast.error(errorText(error), { duration: 3000 });
     } finally {
-      setOpening(false);
+      if (request === requestId.current) setOpening(false);
     }
   };
   const query = projectQuery.trim();
@@ -107,17 +124,22 @@ export function Root() {
             binding={binding}
             dark={dark}
             chooseWorkspace={chooseWorkspace}
+            reconnect={() =>
+              void openWorkspace(binding.root!, binding.projectId)
+            }
+            reconnecting={opening}
           />
         ) : (
           <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground">
             <FolderOpen className="size-10 text-muted-foreground" />
             <p className="max-w-sm text-sm text-muted-foreground">
-              选择项目后即可浏览文件树。
+              {opening ? "正在连接项目…" : "选择项目后即可浏览文件树。"}
             </p>
-            <Button onClick={chooseWorkspace}>
+            <Button disabled={opening} onClick={chooseWorkspace}>
               <FolderOpen className="size-4" />
               打开项目
             </Button>
+            <BuildInfo />
           </div>
         )}
         <ShadcnDialog
@@ -130,7 +152,8 @@ export function Root() {
             <DialogHeader>
               <DialogTitle>打开项目</DialogTitle>
               <DialogDescription>
-                仅可选择 Codex 已创建并关联本机目录的项目。
+                仅可选择 Codex
+                已登记的本机项目。项目列表需要客户端支持实验性项目接口，读取失败后可刷新重试。
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-center gap-2">
@@ -157,9 +180,9 @@ export function Root() {
                   <p className="p-3 text-sm text-muted-foreground">
                     正在读取项目…
                   </p>
-                ) : projectError ? (
-                  <p role="alert" className="p-3 text-sm text-muted-foreground">
-                    {projectError}，请刷新重试。
+                ) : projectError && !projects.length ? (
+                  <p className="p-3 text-sm text-muted-foreground">
+                    项目列表暂不可用，请刷新重试。
                   </p>
                 ) : !filtered.length ? (
                   <p className="p-3 text-sm text-muted-foreground">
@@ -217,6 +240,11 @@ export function Root() {
                 )}
               </div>
             </ScrollArea>
+            {(openError || projectError) && (
+              <p role="alert" className="text-sm text-destructive break-words">
+                {openError || projectError}。请刷新项目列表或重新选择项目。
+              </p>
+            )}
             <DialogFooter>
               <Button
                 variant="outline"

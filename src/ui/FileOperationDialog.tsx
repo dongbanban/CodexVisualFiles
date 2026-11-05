@@ -20,7 +20,7 @@ export function FileOperationDialog({
   actions: FileActions;
   root: string;
 }) {
-  const { busy, dialog, setDialog, destinations, submit } = actions;
+  const { busy, dialog, setDialog, destinations, error, submit } = actions;
   const labels = {
     createFile: "新建文件",
     createDirectory: "新建文件夹",
@@ -101,6 +101,11 @@ export function FileOperationDialog({
               if (event.key === "Enter") void submit();
             }}
           />
+        )}
+        {error && (
+          <p role="alert" className="text-sm text-destructive break-words">
+            {error}
+          </p>
         )}
         <DialogFooter>
           <Button

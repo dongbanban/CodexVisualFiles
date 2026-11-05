@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { MarkdownCode } from "./MarkdownCode.js";
 import { type FileData, type Slot, type FileVersion } from "../shared.js";
 import { rpc, bridge } from "./bridge.js";
 import { localReference } from "./file-utils.js";
@@ -45,12 +47,18 @@ export function FilePreview({
   version,
   bindingId,
   onOpen,
+  onScroll,
 }: {
   slot: Slot;
   version: FileVersion;
   bindingId: string;
   onOpen: (path: string, line?: number) => void;
+  onScroll: (top: number) => void;
 }) {
+  const article = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (article.current) article.current.scrollTop = slot.scroll;
+  }, [slot.path, slot.version]);
   if (!version.exists)
     return (
       <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
@@ -77,9 +85,29 @@ export function FilePreview({
       </div>
     );
   return (
-    <article className="h-full overflow-auto p-6 text-sm leading-7 break-words [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:my-4 [&_h2]:text-xl [&_img]:max-w-full [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-4">
+    <article
+      ref={article}
+      onScroll={(event) => onScroll(event.currentTarget.scrollTop)}
+      className="markdown-preview h-full overflow-auto p-6 text-sm leading-7 break-words [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:my-4 [&_h2]:text-xl [&_img]:max-w-full [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-4"
+    >
+      {/\.mdx$/i.test(slot.path) && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          MDX 仅以 Markdown 预览，组件和表达式不会执行。
+        </p>
+      )}
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        remarkRehypeOptions={{
+          footnoteLabel: "脚注",
+          footnoteBackLabel: "返回正文",
+        }}
         components={{
+          code: MarkdownCode,
+          table: ({ children, ...props }) => (
+            <div className="my-4 overflow-x-auto">
+              <table {...props}>{children}</table>
+            </div>
+          ),
           img: ({ src, alt }) => (
             <RelatedImage
               path={slot.path}
@@ -93,6 +121,12 @@ export function FilePreview({
               href={href}
               onClick={(event) => {
                 event.preventDefault();
+                if (href?.startsWith("#")) {
+                  const target = document.getElementById(href.slice(1));
+                  if (target && article.current?.contains(target))
+                    target.scrollIntoView({ block: "start" });
+                  return;
+                }
                 const relative = localReference(slot.path, href ?? "");
                 if (relative) onOpen(relative);
                 else if (href && /^https?:\/\//i.test(href))

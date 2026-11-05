@@ -9,6 +9,7 @@ import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import {
   VERSION,
+  BUILD_ID,
   emptyState,
   normalizeViewer,
   type Binding,
@@ -17,7 +18,7 @@ import { Workspace, message } from "./workspace.js";
 import { entrypointDirectory } from "./entrypoint.js";
 import { registeredProjects, projectForDirectory } from "./projects.js";
 import { definitionAt } from "./definition.js";
-import { bindWorkspace, workspaceFor } from "./bindings.js";
+import { BindingError, bindWorkspace, workspaceFor } from "./bindings.js";
 
 const resourceUri = "ui://visualfiles/panel.html";
 const pathSchema = z.string().max(10000);
@@ -47,7 +48,42 @@ const success = (data: object) => ({
 const failure = (error: unknown) => ({
   isError: true,
   content: [{ type: "text" as const, text: message(error) }],
+  ...(error instanceof BindingError
+    ? { structuredContent: { errorCode: error.code } }
+    : {}),
 });
+const openWorkspace = async (
+  path: string,
+  projectId: string | undefined,
+  thread: unknown,
+  signal?: AbortSignal,
+): Promise<Binding> => {
+  const selection = await projectForDirectory(
+    path,
+    await registeredProjects(signal),
+    projectId,
+    signal,
+  );
+  const workspace = await Workspace.bind(selection.root);
+  const bindingId = await bindWorkspace(
+    workspace,
+    selection.project.id,
+    thread,
+  );
+  const saved = stateSchema.safeParse(await workspace.loadState());
+  return {
+    root: workspace.root,
+    bindingId,
+    info: workspace.info,
+    projectId: selection.project.id,
+    projectName: selection.project.name,
+    version: VERSION,
+    build: BUILD_ID,
+    state: saved.success
+      ? { ...saved.data, viewer: normalizeViewer(saved.data.viewer) }
+      : emptyState(),
+  };
+};
 
 serveStdio(() => {
   const server = new McpServer({
@@ -126,28 +162,12 @@ serveStdio(() => {
           preferredRoot,
         };
         if (workingDirectory) {
-          const selection = await projectForDirectory(
+          data = await openWorkspace(
             workingDirectory,
-            await registeredProjects(context.mcpReq.signal),
             projectId,
+            context.mcpReq._meta?.threadId,
             context.mcpReq.signal,
           );
-          const workspace = await Workspace.bind(selection.root);
-          const bindingId = await bindWorkspace(
-            workspace,
-            selection.project.id,
-            context.mcpReq._meta?.threadId,
-          );
-          const saved = stateSchema.safeParse(await workspace.loadState());
-          data = {
-            root: workspace.root,
-            bindingId,
-            info: workspace.info,
-            projectName: selection.project.name,
-            state: saved.success
-              ? { ...saved.data, viewer: normalizeViewer(saved.data.viewer) }
-              : emptyState(),
-          };
         }
         return {
           content: [
@@ -158,7 +178,7 @@ serveStdio(() => {
                 : "请在 VisualFiles 中选择 Codex 已登记的本机项目",
             },
           ],
-          structuredContent: { ...data, version: VERSION },
+          structuredContent: { ...data, version: VERSION, build: BUILD_ID },
         };
       } catch (error) {
         return failure(error);
@@ -169,13 +189,29 @@ serveStdio(() => {
     "visualfiles_projects",
     {
       description:
-        "List registered local Codex projects and their source directories.",
-      inputSchema: z.object({ action: z.literal("list") }),
+        "List registered local Codex projects or open a validated project in the current panel's chat.",
+      inputSchema: z.discriminatedUnion("action", [
+        z.object({ action: z.literal("list") }),
+        z.object({
+          action: z.literal("open"),
+          workingDirectory: z.string(),
+          projectId: z.string().optional(),
+        }),
+      ]),
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: { ui: { visibility: ["app"] } },
     },
-    async (_, context) => {
+    async (args, context) => {
       try {
+        if (args.action === "open")
+          return success({
+            binding: await openWorkspace(
+              args.workingDirectory,
+              args.projectId,
+              context.mcpReq._meta?.threadId,
+              context.mcpReq.signal,
+            ),
+          });
         return success({
           projects: await registeredProjects(context.mcpReq.signal),
         });
@@ -203,6 +239,7 @@ serveStdio(() => {
         path: pathSchema.optional(),
         directories: z.array(pathSchema).max(2000).optional(),
         paths: z.array(pathSchema).max(2).optional(),
+        knownFiles: z.record(pathSchema, z.string().length(64)).optional(),
         query: z.string().max(2000).optional(),
         mode: z.enum(["name", "text"]).optional(),
         includeIgnored: z.boolean().optional(),
@@ -219,13 +256,17 @@ serveStdio(() => {
         );
         if (args.action === "snapshot")
           return success(
-            await workspace.snapshot(args.directories ?? [], args.paths ?? []),
+            await workspace.snapshot(
+              args.directories ?? [],
+              args.paths ?? [],
+              args.knownFiles,
+            ),
           );
         if (args.action === "reference")
           return success(await workspace.reference(args.path ?? ""));
         if (args.action === "definition") {
           await workspace.refreshInfo();
-          const file = await workspace.file(args.path ?? "");
+          const file = await workspace.file(args.path ?? "", true);
           const version = file[args.version ?? "current"];
           if (!version.exists || version.binary || version.tooLarge)
             throw new Error("请选择可读取的文本文件");

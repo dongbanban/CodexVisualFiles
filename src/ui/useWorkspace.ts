@@ -14,7 +14,7 @@ import {
 } from "../shared.js";
 import { type CodeSelection } from "./CodeView.js";
 import { toast } from "sonner";
-import { rpc } from "./bridge.js";
+import { rpc, ToolError } from "./bridge.js";
 import { ancestors, errorText } from "./file-utils.js";
 
 export function useWorkspace(binding: Binding) {
@@ -32,6 +32,20 @@ export function useWorkspace(binding: Binding) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [truncated, setTruncated] = useState(false);
+  const [syncError, setSyncError] = useState("");
+  const [operationError, setOperationError] = useState("");
+  const [connectionError, setConnectionError] = useState("");
+  const blocked = useRef<ToolError | null>(null);
+  const setError = useCallback((error: unknown) => {
+    if (!alive.current) return;
+    const text = errorText(error);
+    setOperationError(text);
+    toast.error(text, { duration: 3000, id: "workspace-error" });
+  }, []);
+  const clearError = () => {
+    setOperationError("");
+    setSyncError("");
+  };
   const setNotice = useCallback((value: string) => {
     if (alive.current && value) toast.message(value, { duration: 3000 });
   }, []);
@@ -61,8 +75,21 @@ export function useWorkspace(binding: Binding) {
     [],
   );
   const call = useCallback(
-    <T>(name: string, args: Record<string, unknown>) =>
-      rpc<T>(name, { bindingId: binding.bindingId, ...args }),
+    async <T>(name: string, args: Record<string, unknown>): Promise<T> => {
+      if (blocked.current) throw blocked.current;
+      try {
+        return await rpc<T>(name, { bindingId: binding.bindingId, ...args });
+      } catch (error) {
+        if (
+          error instanceof ToolError &&
+          error.code?.startsWith("WORKSPACE_")
+        ) {
+          blocked.current = error;
+          if (alive.current) setConnectionError(error.message);
+        }
+        throw error;
+      }
+    },
     [binding.bindingId],
   );
   const findDefinition = useCallback(
@@ -82,6 +109,7 @@ export function useWorkspace(binding: Binding) {
     [call],
   );
   const refresh = useCallback((): Promise<boolean> => {
+    if (blocked.current) return Promise.resolve(false);
     if (polling.current) return polling.current;
     setRefreshing(true);
     const request = (async () => {
@@ -95,6 +123,11 @@ export function useWorkspace(binding: Binding) {
               state.viewer.slots.flatMap((slot) => (slot ? [slot.path] : [])),
             ),
           ],
+          knownFiles: Object.fromEntries(
+            Object.entries(filesRef.current)
+              .filter(([, file]) => !!file.signature)
+              .map(([path, file]) => [path, file.signature]),
+          ),
         });
         if (alive.current) {
           setSnapshot((old) => {
@@ -125,11 +158,16 @@ export function useWorkspace(binding: Binding) {
                   : data.errors,
               files: Object.fromEntries(
                 Object.entries({ ...old.files, ...data.files }).filter(
-                  ([path]) => visible.has(path),
+                  ([path]) => visible.has(path) && !data.errors[path],
                 ),
               ),
             };
           });
+          setSyncError(
+            Object.entries(data.errors)
+              .map(([path, error]) => `${path || "项目目录"}：${error}`)
+              .join("；"),
+          );
           setStored((old) => {
             const current = old.viewer.slots[1];
             const file = current && data.files[current.path];
@@ -145,11 +183,11 @@ export function useWorkspace(binding: Binding) {
             };
           });
         }
-        refreshError.current = null;
-        return true;
+        refreshError.current = Object.values(data.errors).join("；") || null;
+        return !refreshError.current;
       } catch (error) {
         const text = errorText(error);
-        if (alive.current && refreshError.current !== text) setNotice(text);
+        if (alive.current) setSyncError(text);
         refreshError.current = text;
         return false;
       } finally {
@@ -159,13 +197,13 @@ export function useWorkspace(binding: Binding) {
     })();
     polling.current = request;
     return request;
-  }, [call, setNotice]);
+  }, [call]);
   const manualRefresh = async () => {
     if (manualRefreshing) return;
     setManualRefreshing(true);
     try {
       if (await refresh()) setNotice("刷新完成");
-      else setNotice(refreshError.current ?? "刷新失败");
+      else setError(blocked.current ?? refreshError.current ?? "刷新失败");
     } finally {
       if (alive.current) setManualRefreshing(false);
     }
@@ -186,8 +224,9 @@ export function useWorkspace(binding: Binding) {
   ]);
   useEffect(() => {
     const timer = setTimeout(() => {
+      if (blocked.current) return;
       void call("visualfiles_save_state", { state: stored }).catch((error) => {
-        if (alive.current) setNotice(`浏览状态保存失败：${errorText(error)}`);
+        if (alive.current) setError(`浏览状态保存失败：${errorText(error)}`);
       });
     }, 200);
     return () => clearTimeout(timer);
@@ -217,7 +256,10 @@ export function useWorkspace(binding: Binding) {
           }
         })
         .catch((error) => {
-          if (!cancelled) setNotice(errorText(error));
+          if (!cancelled) {
+            setResults([]);
+            setError(error);
+          }
         })
         .finally(() => {
           if (!cancelled) setSearching(false);
@@ -253,7 +295,7 @@ export function useWorkspace(binding: Binding) {
           }));
         })
         .catch((error) => {
-          if (alive.current) setNotice(errorText(error));
+          if (alive.current) setError(error);
         })
         .finally(() => {
           if (alive.current) setReading(false);
@@ -262,12 +304,18 @@ export function useWorkspace(binding: Binding) {
     [call],
   );
   const onScroll = useCallback((index: number, top: number) => {
+    const original = stateRef.current.viewer.slots[index];
     clearTimeout(scrollTimers.current[index]);
     scrollTimers.current[index] = setTimeout(() => {
       if (!alive.current) return;
       setStored((old) => {
         const slots = [...old.viewer.slots] as [Slot | null, Slot | null];
-        if (!slots[index] || Math.abs(slots[index]!.scroll - top) < 1)
+        if (
+          !slots[index] ||
+          slots[index]!.path !== original?.path ||
+          slots[index]!.version !== original?.version ||
+          Math.abs(slots[index]!.scroll - top) < 1
+        )
           return old;
         slots[index] = { ...slots[index]!, scroll: top };
         return { ...old, viewer: { ...old.viewer, slots } };
@@ -311,6 +359,10 @@ export function useWorkspace(binding: Binding) {
     toggle,
     findDefinition,
     setNotice,
+    setError,
+    error: connectionError || operationError || syncError,
+    connectionError,
+    clearError,
   };
 }
 

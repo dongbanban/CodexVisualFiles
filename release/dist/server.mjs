@@ -8633,7 +8633,7 @@ ${lanes.join("\n")}
             writeOutputIsTTY() {
               return process.stdout.isTTY;
             },
-            readFile: readFile4,
+            readFile: readFile5,
             writeFile: writeFile22,
             watchFile: watchFile2,
             watchDirectory,
@@ -8674,9 +8674,9 @@ ${lanes.join("\n")}
               return process.memoryUsage().heapUsed;
             },
             getFileSize(path) {
-              const stat2 = statSync(path);
-              if (stat2 == null ? void 0 : stat2.isFile()) {
-                return stat2.size;
+              const stat3 = statSync(path);
+              if (stat3 == null ? void 0 : stat3.isFile()) {
+                return stat3.size;
               }
               return 0;
             },
@@ -8839,7 +8839,7 @@ ${lanes.join("\n")}
               callback
             );
           }
-          function readFile4(fileName, _encoding) {
+          function readFile5(fileName, _encoding) {
             let buffer;
             try {
               buffer = _fs.readFileSync(fileName);
@@ -8894,19 +8894,19 @@ ${lanes.join("\n")}
                 if (entry === "." || entry === "..") {
                   continue;
                 }
-                let stat2;
+                let stat3;
                 if (typeof dirent === "string" || dirent.isSymbolicLink()) {
                   const name = combinePaths(path, entry);
-                  stat2 = statSync(name);
-                  if (!stat2) {
+                  stat3 = statSync(name);
+                  if (!stat3) {
                     continue;
                   }
                 } else {
-                  stat2 = dirent;
+                  stat3 = dirent;
                 }
-                if (stat2.isFile()) {
+                if (stat3.isFile()) {
                   files.push(entry);
-                } else if (stat2.isDirectory()) {
+                } else if (stat3.isDirectory()) {
                   directories.push(entry);
                 }
               }
@@ -8921,15 +8921,15 @@ ${lanes.join("\n")}
             return matchFiles(path, extensions, excludes, includes, useCaseSensitiveFileNames2, process.cwd(), depth, getAccessibleFileSystemEntries, realpath3);
           }
           function fileSystemEntryExists(path, entryKind) {
-            const stat2 = statSync(path);
-            if (!stat2) {
+            const stat3 = statSync(path);
+            if (!stat3) {
               return false;
             }
             switch (entryKind) {
               case 0:
-                return stat2.isFile();
+                return stat3.isFile();
               case 1:
-                return stat2.isDirectory();
+                return stat3.isDirectory();
               default:
                 return false;
             }
@@ -45395,7 +45395,7 @@ ${lanes.join("\n")}
         const possibleOption = getSpellingSuggestion(unknownOption, diagnostics.optionDeclarations, getOptionName);
         return possibleOption ? createDiagnosticForNodeInSourceFileOrCompilerDiagnostic(sourceFile, node2, diagnostics.unknownDidYouMeanDiagnostic, unknownOptionErrorText || unknownOption, possibleOption.name) : createDiagnosticForNodeInSourceFileOrCompilerDiagnostic(sourceFile, node2, diagnostics.unknownOptionDiagnostic, unknownOptionErrorText || unknownOption);
       }
-      function parseCommandLineWorker(diagnostics, commandLine, readFile4) {
+      function parseCommandLineWorker(diagnostics, commandLine, readFile5) {
         const options = {};
         let watchOptions;
         const fileNames = [];
@@ -45443,7 +45443,7 @@ ${lanes.join("\n")}
           }
         }
         function parseResponseFile(fileName) {
-          const text = tryReadFile(fileName, readFile4 || ((fileName2) => sys.readFile(fileName2)));
+          const text = tryReadFile(fileName, readFile5 || ((fileName2) => sys.readFile(fileName2)));
           if (!isString(text)) {
             errors.push(text);
             return;
@@ -45546,8 +45546,8 @@ ${lanes.join("\n")}
         unknownDidYouMeanDiagnostic: Diagnostics.Unknown_compiler_option_0_Did_you_mean_1,
         optionTypeMismatchDiagnostic: Diagnostics.Compiler_option_0_expects_an_argument
       };
-      function parseCommandLine(commandLine, readFile4) {
-        return parseCommandLineWorker(compilerOptionsDidYouMeanDiagnostics, commandLine, readFile4);
+      function parseCommandLine(commandLine, readFile5) {
+        return parseCommandLineWorker(compilerOptionsDidYouMeanDiagnostics, commandLine, readFile5);
       }
       function getOptionFromName(optionName, allowShort) {
         return getOptionDeclarationFromName(getOptionsNameMap, optionName, allowShort);
@@ -45629,8 +45629,8 @@ ${lanes.join("\n")}
           watchOptionsToExtend
         );
       }
-      function readConfigFile(fileName, readFile4) {
-        const textOrDiagnostic = tryReadFile(fileName, readFile4);
+      function readConfigFile(fileName, readFile5) {
+        const textOrDiagnostic = tryReadFile(fileName, readFile5);
         return isString(textOrDiagnostic) ? parseConfigFileTextToJson(fileName, textOrDiagnostic) : { config: {}, error: textOrDiagnostic };
       }
       function parseConfigFileTextToJson(fileName, jsonText) {
@@ -45645,14 +45645,14 @@ ${lanes.join("\n")}
           error: jsonSourceFile.parseDiagnostics.length ? jsonSourceFile.parseDiagnostics[0] : void 0
         };
       }
-      function readJsonConfigFile(fileName, readFile4) {
-        const textOrDiagnostic = tryReadFile(fileName, readFile4);
+      function readJsonConfigFile(fileName, readFile5) {
+        const textOrDiagnostic = tryReadFile(fileName, readFile5);
         return isString(textOrDiagnostic) ? parseJsonText(fileName, textOrDiagnostic) : { fileName, parseDiagnostics: [textOrDiagnostic] };
       }
-      function tryReadFile(fileName, readFile4) {
+      function tryReadFile(fileName, readFile5) {
         let text;
         try {
-          text = readFile4(fileName);
+          text = readFile5(fileName);
         } catch (e) {
           return createCompilerDiagnostic(Diagnostics.Cannot_read_file_0_Colon_1, fileName, e.message);
         }
@@ -135310,12 +135310,12 @@ ${lanes.join("\n")}
       function createCompilerHost(options, setParentNodes) {
         return createCompilerHostWorker(options, setParentNodes);
       }
-      function createGetSourceFile(readFile4, setParentNodes) {
+      function createGetSourceFile(readFile5, setParentNodes) {
         return (fileName, languageVersionOrOptions, onError) => {
           let text;
           try {
             mark("beforeIORead");
-            text = readFile4(fileName);
+            text = readFile5(fileName);
             mark("afterIORead");
             measure("I/O Read", "beforeIORead", "afterIORead");
           } catch (e) {
@@ -136219,7 +136219,7 @@ ${lanes.join("\n")}
           getRedirectFromOutput,
           forEachResolvedProjectReference: forEachResolvedProjectReference2
         });
-        const readFile4 = host.readFile.bind(host);
+        const readFile5 = host.readFile.bind(host);
         (_e = tracing) == null ? void 0 : _e.push(tracing.Phase.Program, "shouldProgramCreateNewSourceFiles", { hasOldProgram: !!oldProgram });
         const shouldCreateNewSourceFile = shouldProgramCreateNewSourceFiles(oldProgram, options);
         (_f = tracing) == null ? void 0 : _f.pop();
@@ -136445,7 +136445,7 @@ ${lanes.join("\n")}
           shouldTransformImportCall,
           emitBuildInfo,
           fileExists,
-          readFile: readFile4,
+          readFile: readFile5,
           directoryExists,
           getSymlinkCache,
           realpath: (_o = host.realpath) == null ? void 0 : _o.bind(host),
@@ -245896,10 +245896,11 @@ function G(B, Q, F, V, q) {
 }
 
 // src/server.ts
-import { readFile as readFile3 } from "node:fs/promises";
+import { readFile as readFile4 } from "node:fs/promises";
 
 // src/shared.ts
-var VERSION = "0.7.8";
+var VERSION = "0.7.9";
+var BUILD_ID = true ? "0368d19ea8" : "development";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,
@@ -245925,6 +245926,10 @@ var emptyState = () => ({
   searchMode: "name",
   treeWidth: 270
 });
+
+// src/workspace-files.ts
+import { createHash as createHash2 } from "node:crypto";
+import { readFile, stat } from "node:fs/promises";
 
 // src/file-version.ts
 import { extname } from "node:path";
@@ -245976,6 +245981,82 @@ function fileVersion(data, path) {
     size: data.length
   };
 }
+
+// src/workspace-files.ts
+var WorkspaceFiles = class {
+  constructor(resolvePath, git) {
+    this.resolvePath = resolvePath;
+    this.git = git;
+  }
+  cache = /* @__PURE__ */ new Map();
+  async read(path, headObject, changed, force = false) {
+    const cached2 = force ? void 0 : this.cache.get(path);
+    let currentKey = "missing";
+    let current = null;
+    let currentVersion = missing();
+    try {
+      const target = await this.resolvePath(path);
+      const info = await stat(target, { bigint: true });
+      if (!info.isFile()) throw new Error("\u8BF7\u9009\u62E9\u6587\u4EF6");
+      currentKey = [
+        info.dev,
+        info.ino,
+        info.size,
+        info.mtimeNs,
+        info.ctimeNs
+      ].join(":");
+      if (cached2?.currentKey === currentKey) {
+        current = cached2.current;
+        currentVersion = cached2.data.current;
+      } else if (info.size > BigInt(MAX_PREVIEW_BYTES)) {
+        currentVersion = {
+          exists: true,
+          text: "",
+          binary: true,
+          size: Number(info.size),
+          tooLarge: true
+        };
+      } else {
+        current = await readFile(target);
+        currentVersion = fileVersion(current, path);
+      }
+    } catch (error62) {
+      if (error62.code !== "ENOENT") throw error62;
+    }
+    let head = null;
+    let headVersion = missing();
+    if (cached2 && cached2.headObject === headObject) {
+      head = cached2.head;
+      headVersion = cached2.data.head;
+    } else if (headObject) {
+      const size = await this.git(["cat-file", "-s", headObject]).then((value) => Number(value.toString())).catch(() => -1);
+      if (size > MAX_PREVIEW_BYTES)
+        headVersion = {
+          exists: true,
+          text: "",
+          binary: true,
+          size,
+          tooLarge: true
+        };
+      else if (size >= 0) {
+        head = await this.git(["show", headObject]);
+        headVersion = fileVersion(head, path);
+      }
+    }
+    const signature = createHash2("sha256").update(JSON.stringify([currentKey, headObject, changed])).digest("hex");
+    const data = {
+      path,
+      signature,
+      head: headVersion,
+      current: currentVersion,
+      hasDiff: changed && headVersion.exists && (!!currentVersion.tooLarge || !!headVersion.tooLarge || current === null || head === null || !current.equals(head))
+    };
+    this.cache.delete(path);
+    this.cache.set(path, { currentKey, headObject, current, head, data });
+    if (this.cache.size > 2) this.cache.delete(this.cache.keys().next().value);
+    return data;
+  }
+};
 
 // src/workspace-search.ts
 import { spawn } from "node:child_process";
@@ -246055,9 +246136,9 @@ import { execFile, spawn as spawn2 } from "node:child_process";
 import { promisify } from "node:util";
 import {
   readdir,
-  readFile,
+  readFile as readFile2,
   realpath,
-  stat,
+  stat as stat2,
   lstat,
   mkdir,
   rename,
@@ -246082,7 +246163,7 @@ import { join } from "node:path";
 var dataDirectory = () => process.env.PLUGIN_DATA || join(homedir(), ".local", "share", "VisualFiles");
 
 // src/workspace.ts
-import { createHash as createHash2, randomUUID } from "node:crypto";
+import { createHash as createHash3, randomUUID } from "node:crypto";
 var exec = promisify(execFile);
 var filenameOrder = new Intl.Collator("en", {
   numeric: true,
@@ -246105,7 +246186,7 @@ var Workspace = class _Workspace {
   static async bind(root) {
     if (!isAbsolute(root)) throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u5FC5\u987B\u662F\u7EDD\u5BF9\u8DEF\u5F84");
     const resolved = await realpath(root);
-    if (!(await stat(resolved)).isDirectory())
+    if (!(await stat2(resolved)).isDirectory())
       throw new Error("\u5DE5\u4F5C\u76EE\u5F55\u5FC5\u987B\u662F\u5B9E\u9645\u5B58\u5728\u7684\u76EE\u5F55");
     const workspace = new _Workspace(resolved);
     await workspace.refreshInfo();
@@ -246268,7 +246349,7 @@ var Workspace = class _Workspace {
     for (const node2 of nodes.values()) {
       node2.ignored = ignored.has(node2.path);
       if (node2.symlink)
-        node2.directory = await this.path(node2.path).then((p) => stat(p)).then((s) => s.isDirectory()).catch(() => false);
+        node2.directory = await this.path(node2.path).then((p) => stat2(p)).then((s) => s.isDirectory()).catch(() => false);
     }
     const prefix = path ? `${path}/` : "";
     for (const [entryPath, entry] of Object.entries(this.info.changes)) {
@@ -246292,57 +246373,19 @@ var Workspace = class _Workspace {
       (a, b) => Number(b.directory) - Number(a.directory) || filenameOrder.compare(a.name, b.name) || (a.name === b.name ? 0 : a.name < b.name ? -1 : 1)
     );
   }
-  async file(path) {
-    let current = null;
-    let currentVersion = missing();
-    try {
-      const target = await this.path(path, true);
-      await this.path(path);
-      const info = await stat(target);
-      if (!info.isFile()) throw new Error("\u8BF7\u9009\u62E9\u6587\u4EF6");
-      if (info.size > MAX_PREVIEW_BYTES)
-        currentVersion = {
-          exists: true,
-          text: "",
-          binary: true,
-          size: info.size,
-          tooLarge: true
-        };
-      else {
-        current = await readFile(target);
-        currentVersion = fileVersion(current, path);
-      }
-    } catch (error62) {
-      if (errorCode(error62) !== "ENOENT") throw error62;
-    }
+  files = new WorkspaceFiles(
+    async (path) => {
+      await this.path(path, true);
+      return this.path(path);
+    },
+    (args) => this.git(args)
+  );
+  async file(path, force = false) {
     const entry = this.info.changes[path];
-    let head = null;
-    let headVersion = missing();
-    if (this.info.git && this.info.head) {
-      const oldPath = entry?.oldPath ?? this.prefix + path;
-      const object2 = `${this.info.head}:${oldPath}`;
-      const size = await this.git(["cat-file", "-s", object2]).then((value) => Number(value.toString())).catch(() => -1);
-      if (size > MAX_PREVIEW_BYTES)
-        headVersion = {
-          exists: true,
-          text: "",
-          binary: true,
-          size,
-          tooLarge: true
-        };
-      else if (size >= 0) {
-        head = await this.git(["show", object2]).catch(() => null);
-        headVersion = fileVersion(head, path);
-      }
-    }
-    return {
-      path,
-      head: headVersion,
-      current: currentVersion,
-      hasDiff: !!entry && headVersion.exists && (!!currentVersion.tooLarge || !!headVersion.tooLarge || current === null || head === null || !current.equals(head))
-    };
+    const object2 = this.info.git && this.info.head ? `${this.info.head}:${entry?.oldPath ?? this.prefix + path}` : null;
+    return this.files.read(path, object2, !!entry, force);
   }
-  async snapshot(directories, paths) {
+  async snapshot(directories, paths, knownFiles = {}) {
     await this.refreshInfo();
     const snapshot = {
       info: this.info,
@@ -246362,7 +246405,8 @@ var Workspace = class _Workspace {
     await Promise.all(
       [...new Set(paths)].map(async (path) => {
         try {
-          snapshot.files[path] = await this.file(path);
+          const file2 = await this.file(path);
+          if (knownFiles[path] !== file2.signature) snapshot.files[path] = file2;
         } catch (error62) {
           snapshot.errors[path] = message(error62);
         }
@@ -246372,7 +246416,7 @@ var Workspace = class _Workspace {
   }
   async reference(path) {
     const absolutePath = await this.path(path);
-    const info = await stat(absolutePath);
+    const info = await stat2(absolutePath);
     if (!info.isFile() && !info.isDirectory())
       throw new Error("\u53EA\u80FD\u5F15\u7528\u6587\u4EF6\u6216\u76EE\u5F55");
     return { absolutePath, directory: info.isDirectory() };
@@ -246457,12 +246501,12 @@ var Workspace = class _Workspace {
   get statePath() {
     return join2(
       this.stateDirectory,
-      `${createHash2("sha256").update(this.root).digest("hex")}.json`
+      `${createHash3("sha256").update(this.root).digest("hex")}.json`
     );
   }
   async loadState() {
     try {
-      return JSON.parse(await readFile(this.statePath, "utf8"));
+      return JSON.parse(await readFile2(this.statePath, "utf8"));
     } catch {
       return emptyState();
     }
@@ -246677,7 +246721,7 @@ function definitionAt(path, text, position) {
 
 // src/bindings.ts
 import { randomUUID as randomUUID2 } from "node:crypto";
-import { mkdir as mkdir2, readFile as readFile2, writeFile as writeFile2 } from "node:fs/promises";
+import { mkdir as mkdir2, readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
 import { dirname as dirname2, join as join4 } from "node:path";
 var recordSchema = external_exports.object({
   root: external_exports.string(),
@@ -246685,13 +246729,23 @@ var recordSchema = external_exports.object({
   thread: external_exports.string().optional()
 });
 var bindings = /* @__PURE__ */ new Map();
-var expired = () => new Error("\u5DE5\u4F5C\u76EE\u5F55\u7ED1\u5B9A\u5DF2\u5931\u6548\uFF0C\u8BF7\u5728\u5F53\u524D\u804A\u5929\u91CD\u65B0\u6253\u5F00\u6587\u4EF6\u6811");
+var BindingError = class extends Error {
+  constructor(code = "WORKSPACE_BINDING_EXPIRED", message2 = "\u9879\u76EE\u8FDE\u63A5\u5DF2\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u8FDE\u63A5\u9879\u76EE") {
+    super(message2);
+    this.code = code;
+  }
+};
+var expired = () => new BindingError();
 var bindingPath = (id) => {
   if (!external_exports.uuid().safeParse(id).success) throw expired();
   return join4(dataDirectory(), "bindings", `${id}.json`);
 };
 var checkThread = (bound, current) => {
-  if (bound && current && bound !== current) throw expired();
+  if (bound && current && bound !== current)
+    throw new BindingError(
+      "WORKSPACE_THREAD_MISMATCH",
+      "\u6B64\u9762\u677F\u6765\u81EA\u5176\u4ED6\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u5F53\u524D\u5BF9\u8BDD\u91CD\u65B0\u8FDE\u63A5\u9879\u76EE"
+    );
 };
 async function bindWorkspace(workspace, projectId, thread) {
   const record2 = recordSchema.parse({
@@ -246709,7 +246763,7 @@ async function bindWorkspace(workspace, projectId, thread) {
 async function workspaceFor(id, thread, signal) {
   let binding = bindings.get(id);
   if (!binding) {
-    const record2 = await readFile2(bindingPath(id), "utf8").then((text) => recordSchema.parse(JSON.parse(text))).catch((error62) => {
+    const record2 = await readFile3(bindingPath(id), "utf8").then((text) => recordSchema.parse(JSON.parse(text))).catch((error62) => {
       const code = error62.code;
       if (code && code !== "ENOENT") throw error62;
       throw expired();
@@ -246760,8 +246814,34 @@ var success2 = (data) => ({
 });
 var failure2 = (error62) => ({
   isError: true,
-  content: [{ type: "text", text: message(error62) }]
+  content: [{ type: "text", text: message(error62) }],
+  ...error62 instanceof BindingError ? { structuredContent: { errorCode: error62.code } } : {}
 });
+var openWorkspace = async (path, projectId, thread, signal) => {
+  const selection = await projectForDirectory(
+    path,
+    await registeredProjects(signal),
+    projectId,
+    signal
+  );
+  const workspace = await Workspace.bind(selection.root);
+  const bindingId = await bindWorkspace(
+    workspace,
+    selection.project.id,
+    thread
+  );
+  const saved = stateSchema.safeParse(await workspace.loadState());
+  return {
+    root: workspace.root,
+    bindingId,
+    info: workspace.info,
+    projectId: selection.project.id,
+    projectName: selection.project.name,
+    version: VERSION,
+    build: BUILD_ID,
+    state: saved.success ? { ...saved.data, viewer: normalizeViewer(saved.data.viewer) } : emptyState()
+  };
+};
 serveStdio(() => {
   const server2 = new McpServer({
     name: "visualfiles",
@@ -246778,7 +246858,7 @@ serveStdio(() => {
         {
           uri: resourceUri,
           mimeType: L,
-          text: await readFile3(
+          text: await readFile4(
             new URL("./index.html", import.meta.url),
             "utf8"
           ),
@@ -246832,26 +246912,12 @@ serveStdio(() => {
           preferredRoot
         };
         if (workingDirectory) {
-          const selection = await projectForDirectory(
+          data = await openWorkspace(
             workingDirectory,
-            await registeredProjects(context.mcpReq.signal),
             projectId,
+            context.mcpReq._meta?.threadId,
             context.mcpReq.signal
           );
-          const workspace = await Workspace.bind(selection.root);
-          const bindingId = await bindWorkspace(
-            workspace,
-            selection.project.id,
-            context.mcpReq._meta?.threadId
-          );
-          const saved = stateSchema.safeParse(await workspace.loadState());
-          data = {
-            root: workspace.root,
-            bindingId,
-            info: workspace.info,
-            projectName: selection.project.name,
-            state: saved.success ? { ...saved.data, viewer: normalizeViewer(saved.data.viewer) } : emptyState()
-          };
         }
         return {
           content: [
@@ -246860,7 +246926,7 @@ serveStdio(() => {
               text: data.root ? `\u6587\u4EF6\u6811\u5DF2\u7ED1\u5B9A ${data.root}` : "\u8BF7\u5728 VisualFiles \u4E2D\u9009\u62E9 Codex \u5DF2\u767B\u8BB0\u7684\u672C\u673A\u9879\u76EE"
             }
           ],
-          structuredContent: { ...data, version: VERSION }
+          structuredContent: { ...data, version: VERSION, build: BUILD_ID }
         };
       } catch (error62) {
         return failure2(error62);
@@ -246870,13 +246936,29 @@ serveStdio(() => {
   server2.registerTool(
     "visualfiles_projects",
     {
-      description: "List registered local Codex projects and their source directories.",
-      inputSchema: external_exports.object({ action: external_exports.literal("list") }),
+      description: "List registered local Codex projects or open a validated project in the current panel's chat.",
+      inputSchema: external_exports.discriminatedUnion("action", [
+        external_exports.object({ action: external_exports.literal("list") }),
+        external_exports.object({
+          action: external_exports.literal("open"),
+          workingDirectory: external_exports.string(),
+          projectId: external_exports.string().optional()
+        })
+      ]),
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: { ui: { visibility: ["app"] } }
     },
-    async (_, context) => {
+    async (args, context) => {
       try {
+        if (args.action === "open")
+          return success2({
+            binding: await openWorkspace(
+              args.workingDirectory,
+              args.projectId,
+              context.mcpReq._meta?.threadId,
+              context.mcpReq.signal
+            )
+          });
         return success2({
           projects: await registeredProjects(context.mcpReq.signal)
         });
@@ -246904,6 +246986,7 @@ serveStdio(() => {
         path: pathSchema.optional(),
         directories: external_exports.array(pathSchema).max(2e3).optional(),
         paths: external_exports.array(pathSchema).max(2).optional(),
+        knownFiles: external_exports.record(pathSchema, external_exports.string().length(64)).optional(),
         query: external_exports.string().max(2e3).optional(),
         mode: external_exports.enum(["name", "text"]).optional(),
         includeIgnored: external_exports.boolean().optional()
@@ -246920,13 +247003,17 @@ serveStdio(() => {
         );
         if (args.action === "snapshot")
           return success2(
-            await workspace.snapshot(args.directories ?? [], args.paths ?? [])
+            await workspace.snapshot(
+              args.directories ?? [],
+              args.paths ?? [],
+              args.knownFiles
+            )
           );
         if (args.action === "reference")
           return success2(await workspace.reference(args.path ?? ""));
         if (args.action === "definition") {
           await workspace.refreshInfo();
-          const file2 = await workspace.file(args.path ?? "");
+          const file2 = await workspace.file(args.path ?? "", true);
           const version2 = file2[args.version ?? "current"];
           if (!version2.exists || version2.binary || version2.tooLarge)
             throw new Error("\u8BF7\u9009\u62E9\u53EF\u8BFB\u53D6\u7684\u6587\u672C\u6587\u4EF6");

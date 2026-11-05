@@ -6,6 +6,7 @@ import {
   GitBranch,
   PanelLeftClose,
   PanelLeftOpen,
+  X,
 } from "lucide-react";
 import { type Binding } from "../shared.js";
 import { Button } from "./components/ui/button.js";
@@ -16,7 +17,7 @@ import {
   ResizableHandle,
 } from "./components/ui/resizable.js";
 import { cn } from "cn";
-import { IconButton } from "./chrome.js";
+import { BuildInfo, IconButton } from "./chrome.js";
 import { useWorkspace } from "./useWorkspace.js";
 import { useFileActions } from "./useFileActions.js";
 import { TreeSidebar } from "./TreeSidebar.js";
@@ -27,10 +28,14 @@ export function WorkspacePanel({
   binding,
   dark,
   chooseWorkspace,
+  reconnect,
+  reconnecting,
 }: {
   binding: Binding;
   dark: boolean;
   chooseWorkspace: () => void;
+  reconnect: () => void;
+  reconnecting: boolean;
 }) {
   const workspace = useWorkspace(binding);
   const actions = useFileActions(workspace);
@@ -42,6 +47,9 @@ export function WorkspacePanel({
     refreshing,
     manualRefreshing,
     manualRefresh,
+    error,
+    connectionError,
+    clearError,
   } = workspace;
   const [sidebar, setSidebar] = useState(true);
   const treePanel = usePanelRef();
@@ -71,7 +79,7 @@ export function WorkspacePanel({
           {binding.projectName ?? snapshot.info.name}
         </span>
         <span
-          className="min-w-0 flex-1 truncate font-mono text-[10px] text-muted-foreground"
+          className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground"
           title={binding.root!}
         >
           {binding.root}
@@ -82,7 +90,7 @@ export function WorkspacePanel({
             {snapshot.info.branch ?? "非 Git 目录"}
           </span>
           {snapshot.info.worktree && (
-            <Badge variant="outline" className="text-[9px]">
+            <Badge variant="outline" className="text-xs">
               worktree
             </Badge>
           )}
@@ -90,7 +98,7 @@ export function WorkspacePanel({
         {manualRefreshing && (
           <span
             role="status"
-            className="shrink-0 text-[11px] text-muted-foreground"
+            className="shrink-0 text-xs text-muted-foreground"
           >
             刷新中…
           </span>
@@ -109,6 +117,43 @@ export function WorkspacePanel({
           />
         </IconButton>
       </header>
+      {error && (
+        <div
+          role="alert"
+          className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-destructive/5 px-3 py-2 text-xs"
+        >
+          <span className="min-w-0 flex-1 break-words text-destructive">
+            {error}
+          </span>
+          {connectionError ? (
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={reconnecting}
+              onClick={reconnect}
+            >
+              {reconnecting ? "正在连接…" : "重新连接项目"}
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={refreshing}
+                onClick={() => {
+                  clearError();
+                  void manualRefresh();
+                }}
+              >
+                重试同步
+              </Button>
+              <IconButton label="关闭错误提示" onClick={clearError}>
+                <X className="size-3.5" />
+              </IconButton>
+            </>
+          )}
+        </div>
+      )}
       <ResizablePanelGroup
         orientation="horizontal"
         className={cn(
@@ -145,6 +190,10 @@ export function WorkspacePanel({
           <ContentViewer workspace={workspace} actions={actions} dark={dark} />
         </ResizablePanel>
       </ResizablePanelGroup>
+      <footer className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-t px-3 py-1 text-xs text-muted-foreground">
+        <span>内容只读 · 菜单可管理文件 · 删除进入废纸篓</span>
+        <BuildInfo binding={binding} />
+      </footer>
       <FileOperationDialog actions={actions} root={binding.root!} />
     </div>
   );

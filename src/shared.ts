@@ -1,4 +1,9 @@
-export const VERSION = "0.7.8";
+export const VERSION = "0.7.9";
+declare const __VISUALFILES_BUILD__: string;
+export const BUILD_ID =
+  typeof __VISUALFILES_BUILD__ === "string"
+    ? __VISUALFILES_BUILD__
+    : "development";
 export type Version = "head" | "current";
 export interface Slot {
   path: string;
@@ -102,6 +107,7 @@ export interface FileVersion {
 }
 export interface FileData {
   path: string;
+  signature: string;
   head: FileVersion;
   current: FileVersion;
   hasDiff: boolean;
@@ -125,6 +131,9 @@ export interface Binding {
   message?: string;
   preferredRoot?: string;
   projectName?: string;
+  projectId?: string;
+  version?: string;
+  build?: string;
 }
 export interface LocalProject {
   id: string;

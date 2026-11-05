@@ -1,8 +1,31 @@
 import { build } from "esbuild";
-import { cp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import { cp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
+const hash = createHash("sha256");
+async function hashSource(path: string) {
+  const entries = await readdir(path, { withFileTypes: true });
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    const file = `${path}/${entry.name}`;
+    if (entry.isDirectory()) await hashSource(file);
+    else
+      hash
+        .update(file)
+        .update("\0")
+        .update(await readFile(file));
+  }
+}
+await hashSource("src");
+for (const path of ["package-lock.json", "scripts/build.ts"])
+  hash
+    .update(path)
+    .update("\0")
+    .update(await readFile(path));
+const define = {
+  __VISUALFILES_BUILD__: JSON.stringify(hash.digest("hex").slice(0, 10)),
+};
 await rm("dist", { recursive: true, force: true });
 await mkdir("dist", { recursive: true });
 await promisify(execFile)(process.execPath, [
@@ -22,7 +45,7 @@ const ui = await build({
   platform: "browser",
   target: "es2022",
   minify: true,
-  define: { "process.env.NODE_ENV": '"production"' },
+  define: { ...define, "process.env.NODE_ENV": '"production"' },
   loader: { ".css": "text" },
 });
 await writeFile(
@@ -36,6 +59,7 @@ await build({
   platform: "node",
   format: "esm",
   target: "node22",
+  define,
   banner: {
     js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url); const __filename = import.meta.filename; const __dirname = import.meta.dirname;',
   },

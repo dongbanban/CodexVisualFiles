@@ -12,14 +12,25 @@ const recordSchema = z.object({
   thread: z.string().optional(),
 });
 const bindings = new Map<string, { workspace: Workspace; thread?: string }>();
-const expired = () =>
-  new Error("工作目录绑定已失效，请在当前聊天重新打开文件树");
+export class BindingError extends Error {
+  constructor(
+    readonly code = "WORKSPACE_BINDING_EXPIRED",
+    message = "项目连接已失效，请重新连接项目",
+  ) {
+    super(message);
+  }
+}
+const expired = () => new BindingError();
 const bindingPath = (id: string) => {
   if (!z.uuid().safeParse(id).success) throw expired();
   return join(dataDirectory(), "bindings", `${id}.json`);
 };
 const checkThread = (bound: string | undefined, current: unknown) => {
-  if (bound && current && bound !== current) throw expired();
+  if (bound && current && bound !== current)
+    throw new BindingError(
+      "WORKSPACE_THREAD_MISMATCH",
+      "此面板来自其他对话，请在当前对话重新连接项目",
+    );
 };
 
 export async function bindWorkspace(

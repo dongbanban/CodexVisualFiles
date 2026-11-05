@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode, ReactElement } from "react";
 import type { LucideIcon } from "lucide-react";
+import { BUILD_ID, VERSION, type Binding } from "../shared.js";
 import { Button } from "./components/ui/button.js";
 import {
   Tooltip,
@@ -28,6 +29,18 @@ export interface MenuAction {
   disabled?: boolean;
   danger?: boolean;
   separator?: boolean;
+}
+export function BuildInfo({ binding }: { binding?: Binding }) {
+  const mismatch = binding?.build && binding.build !== BUILD_ID;
+  return (
+    <span
+      className="shrink-0 text-xs text-muted-foreground"
+      title={`界面 v${VERSION} · ${BUILD_ID}${binding?.build ? `；服务 v${binding.version} · ${binding.build}` : ""}${mismatch ? "；版本不一致，请重新打开面板" : ""}`}
+    >
+      v{VERSION} · {BUILD_ID}
+      {mismatch ? "（请重新打开面板）" : ""}
+    </span>
+  );
 }
 export function IconButton({
   label,

@@ -78,3 +78,109 @@
     @apply bg-background text-foreground;
   }
 }
+
+.toaster[data-sonner-toaster] {
+  width: calc(100vw - 3rem);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+.toaster[data-sonner-toaster] [data-sonner-toast] {
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  left: 50%;
+  right: auto;
+  translate: -50% 0;
+}
+.cm-editor .cm-panels {
+  background: var(--muted);
+  color: var(--foreground);
+}
+.cm-editor .cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 2rem 0.5rem 0.5rem;
+  font-size: 12px;
+}
+.cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+.cm-editor .cm-search input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--primary);
+}
+.cm-editor .cm-search .cm-textfield {
+  width: 9rem;
+  max-width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+}
+.cm-editor .cm-search .cm-button {
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  text-transform: none;
+}
+.cm-search :is(input, button):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.markdown-preview :is(ul, ol) {
+  margin-block: 0.5rem;
+  padding-left: 1.5rem;
+}
+.markdown-preview ul {
+  list-style: disc;
+}
+.markdown-preview ol {
+  list-style: decimal;
+}
+.markdown-preview .contains-task-list {
+  list-style: none;
+}
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.markdown-preview :is(th, td) {
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  min-width: 6rem;
+}
+.markdown-preview th {
+  background: var(--muted);
+  text-align: left;
+}
+.markdown-preview .tok-keyword {
+  color: light-dark(#8250df, #d2a8ff);
+}
+.markdown-preview :is(.tok-string, .tok-regexp) {
+  color: light-dark(#0a3069, #a5d6ff);
+}
+.markdown-preview :is(.tok-number, .tok-bool) {
+  color: light-dark(#0550ae, #79c0ff);
+}
+.markdown-preview .tok-comment {
+  color: var(--muted-foreground);
+}
+.markdown-preview :is(.tok-function, .tok-typeName) {
+  color: light-dark(#953800, #ffa657);
+}
+:root {
+  color-scheme: light;
+}
+:root.dark {
+  color-scheme: dark;
+}

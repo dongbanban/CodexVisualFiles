@@ -20,7 +20,7 @@ import {
 } from "../conversation.js";
 import type { WorkspaceModel } from "./useWorkspace.js";
 import { bridge, extensions, openFileInCodex } from "./bridge.js";
-import { parent, base, joinPath, ancestors, errorText } from "./file-utils.js";
+import { parent, base, joinPath, ancestors } from "./file-utils.js";
 const INTERNAL_DRAG_TYPE = "application/x-visualfiles";
 
 export interface FileDialogState {
@@ -40,6 +40,8 @@ export function useFileActions(workspace: WorkspaceModel) {
     call,
     refresh,
     setNotice,
+    setError,
+    clearError,
   } = workspace;
   const [busy, setBusy] = useState(false);
   const [clipboard, setClipboard] = useState<{
@@ -51,20 +53,25 @@ export function useFileActions(workspace: WorkspaceModel) {
   useEffect(() => {
     if (dialog?.kind !== "move") return;
     let cancelled = false;
+    setDestinations([]);
     void call<Snapshot>("visualfiles_read", {
       action: "snapshot",
       directories: [dialog.value],
       paths: [],
     })
       .then((data) => {
-        if (!cancelled)
-          setDestinations(
-            (data.directories[dialog.value] ?? []).filter(
-              (node) => node.directory && !node.deleted,
-            ),
-          );
+        if (cancelled) return;
+        if (data.errors[dialog.value])
+          throw new Error(data.errors[dialog.value]);
+        setDestinations(
+          (data.directories[dialog.value] ?? []).filter(
+            (node) => node.directory && !node.deleted,
+          ),
+        );
       })
-      .catch((error) => setNotice(errorText(error)));
+      .catch((error) => {
+        if (!cancelled) setError(error);
+      });
     return () => {
       cancelled = true;
     };
@@ -76,7 +83,7 @@ export function useFileActions(workspace: WorkspaceModel) {
       await navigator.clipboard.writeText(value);
       setNotice("已复制");
     } catch {
-      setNotice("剪贴板不可用，请检查客户端的剪贴板权限");
+      setError("剪贴板不可用，请检查客户端的剪贴板权限");
     }
   };
   const copyEntry = (mode: "copy" | "cut", path: string) => {
@@ -88,6 +95,7 @@ export function useFileActions(workspace: WorkspaceModel) {
   const openInCodex = async (path: string) => {
     if (busy) return;
     setBusy(true);
+    clearError();
     try {
       const file = await call<ConversationReference>("visualfiles_read", {
         action: "reference",
@@ -97,7 +105,7 @@ export function useFileActions(workspace: WorkspaceModel) {
         throw new Error("Codex 原生查看仅支持文件，请选择文件");
       await openFileInCodex(file.absolutePath);
     } catch (error) {
-      if (alive.current) setNotice(errorText(error));
+      if (alive.current) setError(error);
     } finally {
       if (alive.current) setBusy(false);
     }
@@ -126,6 +134,7 @@ export function useFileActions(workspace: WorkspaceModel) {
     if (!clipboard || busy) return;
     const entry = clipboard;
     setBusy(true);
+    clearError();
     try {
       const result = await call<{ path: string }>("visualfiles_mutate", {
         action: entry.mode === "cut" ? "move" : "copy",
@@ -144,7 +153,7 @@ export function useFileActions(workspace: WorkspaceModel) {
       setNotice(`已粘贴 ${base(result.path)}`);
       await refresh();
     } catch (error) {
-      setNotice(errorText(error));
+      setError(error);
     } finally {
       setBusy(false);
     }
@@ -156,6 +165,7 @@ export function useFileActions(workspace: WorkspaceModel) {
   ) {
     if (busy) return;
     setBusy(true);
+    clearError();
     try {
       const selectedCode =
         slot &&
@@ -204,7 +214,7 @@ export function useFileActions(workspace: WorkspaceModel) {
             : "已添加到当前对话草稿",
         );
     } catch (error) {
-      if (alive.current) setNotice(errorText(error));
+      if (alive.current) setError(error);
     } finally {
       if (alive.current) setBusy(false);
     }
@@ -212,6 +222,7 @@ export function useFileActions(workspace: WorkspaceModel) {
   async function submit() {
     if (!dialog || busy) return;
     setBusy(true);
+    clearError();
     try {
       let path = dialog.path;
       let destination: string | undefined;
@@ -246,7 +257,7 @@ export function useFileActions(workspace: WorkspaceModel) {
       await refresh();
       setDialog(null);
     } catch (error) {
-      setNotice(errorText(error));
+      setError(error);
     } finally {
       setBusy(false);
     }
@@ -284,7 +295,7 @@ export function useFileActions(workspace: WorkspaceModel) {
       }));
       await refresh();
     } catch (error) {
-      setNotice(errorText(error));
+      setError(error);
     } finally {
       setBusy(false);
     }
@@ -395,6 +406,7 @@ export function useFileActions(workspace: WorkspaceModel) {
     dialog,
     setDialog,
     destinations,
+    error: workspace.error,
     submit,
     drag,
     drop,

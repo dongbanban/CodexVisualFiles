@@ -1,4 +1,4 @@
-import { MAX_PREVIEW_BYTES, fileVersion, missing } from "./file-version.js";
+import { WorkspaceFiles } from "./workspace-files.js";
 import { searchWorkspace } from "./workspace-search.js";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
@@ -293,66 +293,26 @@ export class Workspace {
     );
   }
 
-  async file(path: string): Promise<FileData> {
-    let current: Buffer | null = null;
-    let currentVersion = missing();
-    try {
-      const target = await this.path(path, true);
-      await this.path(path);
-      const info = await stat(target);
-      if (!info.isFile()) throw new Error("请选择文件");
-      if (info.size > MAX_PREVIEW_BYTES)
-        currentVersion = {
-          exists: true,
-          text: "",
-          binary: true,
-          size: info.size,
-          tooLarge: true,
-        };
-      else {
-        current = await readFile(target);
-        currentVersion = fileVersion(current, path);
-      }
-    } catch (error) {
-      if (errorCode(error) !== "ENOENT") throw error;
-    }
+  private readonly files = new WorkspaceFiles(
+    async (path) => {
+      await this.path(path, true);
+      return this.path(path);
+    },
+    (args) => this.git(args),
+  );
+  async file(path: string, force = false): Promise<FileData> {
     const entry = this.info.changes[path];
-    let head: Buffer | null = null;
-    let headVersion = missing();
-    if (this.info.git && this.info.head) {
-      const oldPath = entry?.oldPath ?? this.prefix + path;
-      const object = `${this.info.head}:${oldPath}`;
-      const size = await this.git(["cat-file", "-s", object])
-        .then((value) => Number(value.toString()))
-        .catch(() => -1);
-      if (size > MAX_PREVIEW_BYTES)
-        headVersion = {
-          exists: true,
-          text: "",
-          binary: true,
-          size,
-          tooLarge: true,
-        };
-      else if (size >= 0) {
-        head = await this.git(["show", object]).catch(() => null);
-        headVersion = fileVersion(head, path);
-      }
-    }
-    return {
-      path,
-      head: headVersion,
-      current: currentVersion,
-      hasDiff:
-        !!entry &&
-        headVersion.exists &&
-        (!!currentVersion.tooLarge ||
-          !!headVersion.tooLarge ||
-          current === null ||
-          head === null ||
-          !current.equals(head)),
-    };
+    const object =
+      this.info.git && this.info.head
+        ? `${this.info.head}:${entry?.oldPath ?? this.prefix + path}`
+        : null;
+    return this.files.read(path, object, !!entry, force);
   }
-  async snapshot(directories: string[], paths: string[]): Promise<Snapshot> {
+  async snapshot(
+    directories: string[],
+    paths: string[],
+    knownFiles: Record<string, string> = {},
+  ): Promise<Snapshot> {
     await this.refreshInfo();
     const snapshot: Snapshot = {
       info: this.info,
@@ -372,7 +332,8 @@ export class Workspace {
     await Promise.all(
       [...new Set(paths)].map(async (path) => {
         try {
-          snapshot.files[path] = await this.file(path);
+          const file = await this.file(path);
+          if (knownFiles[path] !== file.signature) snapshot.files[path] = file;
         } catch (error) {
           snapshot.errors[path] = message(error);
         }

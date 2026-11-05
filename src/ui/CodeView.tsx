@@ -12,6 +12,7 @@ import {
   gotoLine,
   searchKeymap,
   highlightSelectionMatches,
+  search,
 } from "@codemirror/search";
 import {
   LanguageDescription,
@@ -22,12 +23,7 @@ import { languages } from "@codemirror/language-data";
 import { MergeView } from "@codemirror/merge";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { cn } from "cn";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CornerDownRight,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, CornerDownRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { IconButton } from "./chrome.js";
 import type { Slot, FileVersion, DefinitionLocation } from "../shared.js";
@@ -69,6 +65,9 @@ export function CodeView(props: Props) {
   }>({ back: [], forward: [] });
   const [navigation, setNavigation] = useState({ back: false, forward: false });
   const [defining, setDefining] = useState(false);
+  const [definitionAvailable, setDefinitionAvailable] = useState(false);
+  const canDefine = (index: number) =>
+    /\.(?:[cm]?[jt]s|[jt]sx)$/i.test(latest.current.slots[index]?.path ?? "");
   const definitionRequest = useRef(0);
   const publishHistory = () =>
     setNavigation({
@@ -127,7 +126,7 @@ export function CodeView(props: Props) {
     const editor = editors.current[index];
     const slot = latest.current.slots[index];
     const version = latest.current.versions[index];
-    if (!editor || !slot || !version) return;
+    if (!editor || !slot || !version || !canDefine(index)) return;
     const text = editor.state.doc.toString();
     const origin = editor.state.selection.main;
     if (!version.revision || version.text.replace(/\r\n?/g, "\n") !== text) {
@@ -170,6 +169,7 @@ export function CodeView(props: Props) {
     let disposed = false;
     const element = host.current!;
     active.current = props.active ?? 0;
+    setDefinitionAvailable(canDefine(active.current));
     history.current = { back: [], forward: [] };
     publishHistory();
     definitionRequest.current++;
@@ -183,10 +183,23 @@ export function CodeView(props: Props) {
       highlightActiveLineGutter(),
       props.dark ? oneDark : syntaxHighlighting(defaultHighlightStyle),
       highlightSelectionMatches(),
+      search({ caseSensitive: true }),
+      EditorState.phrases.of({
+        Find: "查找",
+        next: "下一个",
+        previous: "上一个",
+        all: "全选匹配",
+        "match case": "区分大小写",
+        regexp: "正则",
+        "by word": "全词",
+        close: "关闭查找",
+        "No matches": "无匹配结果",
+      }),
       keymap.of([
         {
           key: "F12",
           run: () => {
+            if (!canDefine(index)) return false;
             void jumpToDefinition(index);
             return true;
           },
@@ -199,8 +212,10 @@ export function CodeView(props: Props) {
       EditorView.domEventHandlers({
         mousedown: (event, view) => {
           active.current = index;
+          setDefinitionAvailable(canDefine(index));
           if (event.button !== 0 || (!event.metaKey && !event.ctrlKey))
             return false;
+          if (!canDefine(index)) return false;
           const position = view.posAtCoords({
             x: event.clientX,
             y: event.clientY,
@@ -214,7 +229,10 @@ export function CodeView(props: Props) {
         },
       }),
       EditorView.updateListener.of((update) => {
-        if (update.focusChanged && update.view.hasFocus) active.current = index;
+        if (update.focusChanged && update.view.hasFocus) {
+          active.current = index;
+          setDefinitionAvailable(canDefine(index));
+        }
         if (
           (update.selectionSet || update.focusChanged) &&
           active.current === index
@@ -329,6 +347,7 @@ export function CodeView(props: Props) {
   }, [props.versions[0]?.text, props.versions[1]?.text, identity]);
   useEffect(() => {
     active.current = props.active ?? 0;
+    setDefinitionAvailable(canDefine(active.current));
   }, [props.active]);
   useEffect(() => {
     if (!props.line) return;
@@ -360,8 +379,12 @@ export function CodeView(props: Props) {
           <ArrowRight className="size-3.5" />
         </IconButton>
         <IconButton
-          label="转到定义（F12 或 ⌘/Ctrl＋点击）"
-          disabled={defining}
+          label={
+            definitionAvailable
+              ? "本文件定义（JS/TS；F12 或 ⌘/Ctrl＋点击；不解析导入文件）"
+              : "本文件定义仅支持 JS/TS，不解析导入文件"
+          }
+          disabled={defining || !definitionAvailable}
           onClick={() => void jumpToDefinition()}
         >
           {defining ? (
@@ -370,7 +393,10 @@ export function CodeView(props: Props) {
             <CornerDownRight className="size-3.5" />
           )}
         </IconButton>
-        <span className="ml-auto truncate text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
+          本文件定义{definitionAvailable ? "" : " · 仅 JS/TS"}
+        </span>
+        <span className="ml-auto truncate text-xs text-muted-foreground">
           {cursorLabel}
         </span>
       </div>

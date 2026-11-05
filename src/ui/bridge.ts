@@ -28,19 +28,29 @@ export async function rpc<T>(
 ): Promise<T> {
   const result = await bridge.callServerTool({ name, arguments: args });
   if (result.isError)
-    throw new Error(
+    throw new ToolError(
       result.content
         ?.filter((item) => item.type === "text")
         .map((item) => (item as { text: string }).text)
         .join("\n") || "操作失败",
+      (result.structuredContent as { errorCode?: string } | undefined)
+        ?.errorCode,
     );
   return result.structuredContent as T;
 }
 
+export class ToolError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
 export async function openFileInCodex(path: string) {
   const files = extensions.files;
-  if (!files)
-    throw new Error("当前客户端不支持 Codex 原生查看，请更新客户端");
+  if (!files) throw new Error("当前客户端不支持 Codex 原生查看，请更新客户端");
   await files.open(path);
 }
 

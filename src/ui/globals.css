@@ -184,3 +184,25 @@
 :root.dark {
   color-scheme: dark;
 }
+.cm-show-head .cm-mergeViewEditor:last-child,
+.cm-show-current .cm-mergeViewEditor:first-child {
+  display: none;
+}
+.cm-show-head .cm-mergeViewEditor,
+.cm-show-current .cm-mergeViewEditor {
+  width: 100%;
+}
+.cm-editor.cm-focused {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.dark .cm-editor,
+.cm-editor {
+  background: var(--background);
+  color: var(--foreground);
+}
+.cm-editor .cm-gutters {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  border-color: var(--border);
+}

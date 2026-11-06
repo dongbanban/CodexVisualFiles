@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePanelRef } from "react-resizable-panels";
 import {
   FolderOpen,
@@ -22,6 +22,7 @@ import { useWorkspace } from "./useWorkspace.js";
 import { useFileActions } from "./useFileActions.js";
 import { TreeSidebar } from "./TreeSidebar.js";
 import { ContentViewer } from "./ContentViewer.js";
+import { useElementWidth } from "./useElementWidth.js";
 import { FileOperationDialog } from "./FileOperationDialog.js";
 
 export function WorkspacePanel({
@@ -53,14 +54,26 @@ export function WorkspacePanel({
   } = workspace;
   const [sidebar, setSidebar] = useState(true);
   const treePanel = usePanelRef();
+  const { ref, width } = useElementWidth<HTMLDivElement>();
+  const compact = width > 0 && width < stored.treeWidth + 321;
+  const [treeOnly, setTreeOnly] = useState(!stored.viewer.slots.some(Boolean));
+  const treeVisible = compact ? treeOnly : sidebar;
+  useEffect(() => {
+    if (compact && workspace.reading) setTreeOnly(false);
+  }, [compact, workspace.reading]);
   return (
-    <div className="flex h-dvh w-full flex-col overflow-x-auto overflow-y-hidden bg-background text-xs text-foreground">
-      <header className="flex h-11 shrink-0 items-center gap-2 border-b px-2">
+    <div
+      ref={ref}
+      className="flex h-dvh w-full min-w-0 flex-col overflow-hidden bg-background text-xs text-foreground"
+    >
+      <header className="flex min-h-11 shrink-0 flex-wrap items-center gap-2 border-b px-2 py-1">
         <IconButton
-          label={sidebar ? "隐藏文件树" : "显示文件树"}
-          onClick={() => setSidebar(!sidebar)}
+          label={treeVisible ? "隐藏文件树" : "显示文件树"}
+          onClick={() =>
+            compact ? setTreeOnly(!treeOnly) : setSidebar(!sidebar)
+          }
         >
-          {sidebar ? (
+          {treeVisible ? (
             <PanelLeftClose className="size-4" />
           ) : (
             <PanelLeftOpen className="size-4" />
@@ -73,9 +86,9 @@ export function WorkspacePanel({
           title={binding.root!}
         >
           <FolderOpen className="size-3" />
-          打开项目
+          切换浏览项目
         </Button>
-        <span className="min-w-0 max-w-40 shrink-0 truncate font-medium">
+        <span className="min-w-0 max-w-40 truncate font-medium">
           {binding.projectName ?? snapshot.info.name}
         </span>
         <span
@@ -154,42 +167,56 @@ export function WorkspacePanel({
           )}
         </div>
       )}
-      <ResizablePanelGroup
-        orientation="horizontal"
-        className={cn(
-          "min-h-0 flex-1",
-          sidebar ? "min-w-[561px]" : "min-w-[320px]",
+      <div className="relative min-h-0 min-w-0 flex-1">
+        {compact && treeOnly && (
+          <div className="absolute inset-0">
+            <TreeSidebar workspace={workspace} actions={actions} />
+          </div>
         )}
-        onLayoutChanged={(_, { isUserInteraction }) => {
-          if (!isUserInteraction) return;
-          // Read pixels after the library commits keyboard layout changes.
-          queueMicrotask(() => {
-            if (!alive.current || !treePanel.current) return;
-            const width = Math.round(treePanel.current.getSize().inPixels);
-            setStored((old) =>
-              old.treeWidth === width ? old : { ...old, treeWidth: width },
-            );
-          });
-        }}
-      >
-        {sidebar && (
-          <>
-            <ResizablePanel
-              id="files"
-              panelRef={treePanel}
-              defaultSize={stored.treeWidth}
-              minSize={240}
-              groupResizeBehavior="preserve-pixel-size"
-            >
-              <TreeSidebar workspace={workspace} actions={actions} />
-            </ResizablePanel>
-            <ResizableHandle aria-label="调整文件树宽度" withHandle />
-          </>
-        )}
-        <ResizablePanel id="content" minSize={320}>
-          <ContentViewer workspace={workspace} actions={actions} dark={dark} />
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        <ResizablePanelGroup
+          orientation="horizontal"
+          className="h-full min-h-0 min-w-0"
+          style={{ display: compact && treeOnly ? "none" : undefined }}
+          inert={compact && treeOnly ? true : undefined}
+          onLayoutChanged={(_, { isUserInteraction }) => {
+            if (!isUserInteraction || compact) return;
+            // Read pixels after the library commits keyboard layout changes.
+            queueMicrotask(() => {
+              if (!alive.current || !treePanel.current) return;
+              const width = Math.round(treePanel.current.getSize().inPixels);
+              setStored((old) =>
+                old.treeWidth === width ? old : { ...old, treeWidth: width },
+              );
+            });
+          }}
+        >
+          {!compact && sidebar && (
+            <>
+              <ResizablePanel
+                id="files"
+                panelRef={treePanel}
+                defaultSize={stored.treeWidth}
+                minSize={240}
+                groupResizeBehavior="preserve-pixel-size"
+              >
+                <TreeSidebar workspace={workspace} actions={actions} />
+              </ResizablePanel>
+              <ResizableHandle aria-label="调整文件树宽度" withHandle />
+            </>
+          )}
+          <ResizablePanel
+            key="content"
+            id="content"
+            minSize={Math.min(320, width || 320)}
+          >
+            <ContentViewer
+              workspace={workspace}
+              actions={actions}
+              dark={dark}
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
       <footer className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-t px-3 py-1 text-xs text-muted-foreground">
         <span>内容只读 · 菜单可管理文件 · 删除进入废纸篓</span>
         <BuildInfo binding={binding} />

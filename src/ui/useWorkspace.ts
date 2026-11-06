@@ -65,7 +65,7 @@ export function useWorkspace(binding: Binding) {
   stateRef.current = stored;
   const filesRef = useRef(snapshot.files);
   filesRef.current = snapshot.files;
-  const selection = useRef<CodeSelection | null>(null);
+  const [selection, setSelection] = useState<CodeSelection | null>(null);
   const openQueue = useRef(Promise.resolve());
   const polling = useRef<Promise<boolean> | null>(null);
   const refreshError = useRef<string | null>(null);
@@ -171,7 +171,7 @@ export function useWorkspace(binding: Binding) {
     });
     setSelected(location.path);
     setTarget(undefined);
-    selection.current = null;
+    setSelection(null);
     setCodeLocation({ ...location });
     return true;
   }, setError);
@@ -312,7 +312,7 @@ export function useWorkspace(binding: Binding) {
       setSelected(path);
       setReading(true);
       setTarget(undefined);
-      selection.current = null;
+      setSelection(null);
       openQueue.current = openQueue.current
         .then(async () => {
           const data = await call<FileData>("visualfiles_read", {
@@ -400,6 +400,7 @@ export function useWorkspace(binding: Binding) {
     codeNavigation,
     filesRef,
     selection,
+    setSelection,
     call,
     refresh,
     open,

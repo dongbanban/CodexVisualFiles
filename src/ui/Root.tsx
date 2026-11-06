@@ -137,7 +137,7 @@ export function Root() {
             </p>
             <Button disabled={opening} onClick={chooseWorkspace}>
               <FolderOpen className="size-4" />
-              打开项目
+              选择浏览项目
             </Button>
             <BuildInfo />
           </div>
@@ -150,10 +150,10 @@ export function Root() {
         >
           <DialogContent showCloseButton={!opening} className="sm:max-w-xl">
             <DialogHeader>
-              <DialogTitle>打开项目</DialogTitle>
+              <DialogTitle>选择浏览项目</DialogTitle>
               <DialogDescription>
                 仅可选择 Codex
-                已登记的本机项目。项目列表需要客户端支持实验性项目接口，读取失败后可刷新重试。
+                已登记的本机项目。仅切换文件树，不改变当前聊天所属项目。
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-center gap-2">
@@ -259,7 +259,7 @@ export function Root() {
                   className="flex items-center gap-2 text-xs text-muted-foreground"
                 >
                   <RefreshCw className="size-3 animate-spin" />
-                  正在打开项目…
+                  正在选择浏览项目…
                 </span>
               )}
             </DialogFooter>

@@ -22,6 +22,14 @@ import { parent } from "./file-utils.js";
 import type { WorkspaceModel } from "./useWorkspace.js";
 import type { FileActions } from "./useFileActions.js";
 
+const statusLabels: Record<string, string> = {
+  A: "新增",
+  M: "修改",
+  D: "删除",
+  R: "重命名",
+  U: "冲突",
+};
+
 export function TreeNodes({
   workspace,
   actions,
@@ -211,7 +219,7 @@ export function TreeNodes({
                     : "text-amber-600 dark:text-amber-400",
               )}
             >
-              {node.status}
+              {statusLabels[node.status] ?? node.status}
             </span>
           )}
         </Button>

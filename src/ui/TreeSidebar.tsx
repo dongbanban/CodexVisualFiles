@@ -123,7 +123,7 @@ export function TreeSidebar({
               setQuery("");
             }}
           >
-            {snapshot.info.name}
+            项目文件
           </Button>
           <IconButton
             label="新建文件"

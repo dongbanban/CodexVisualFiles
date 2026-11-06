@@ -11,7 +11,12 @@ import {
   MessageSquare,
   ExternalLink,
 } from "lucide-react";
-import { type Snapshot, type Slot, type TreeEntry } from "../shared.js";
+import {
+  type Snapshot,
+  type Slot,
+  type TreeEntry,
+  type FileData,
+} from "../shared.js";
 import { type MenuAction } from "./chrome.js";
 import {
   addReferenceDraft,
@@ -19,7 +24,12 @@ import {
   type ConversationTarget,
 } from "../conversation.js";
 import type { WorkspaceModel } from "./useWorkspace.js";
-import { bridge, extensions, openFileInCodex } from "./bridge.js";
+import {
+  bridge,
+  extensions,
+  openFileInCodex,
+  referenceDraftSupported,
+} from "./bridge.js";
 import { parent, base, joinPath, ancestors } from "./file-utils.js";
 const INTERNAL_DRAG_TYPE = "application/x-visualfiles";
 
@@ -37,6 +47,7 @@ export function useFileActions(workspace: WorkspaceModel) {
     setSelected,
     filesRef,
     selection,
+    setSelection,
     call,
     refresh,
     setNotice,
@@ -116,7 +127,7 @@ export function useFileActions(workspace: WorkspaceModel) {
         ? destination + value.slice(source.length)
         : value;
     setSelected((old) => changed(old));
-    selection.current = null;
+    setSelection(null);
     setStored((old) => ({
       ...old,
       expanded: [
@@ -169,12 +180,26 @@ export function useFileActions(workspace: WorkspaceModel) {
     try {
       const selectedCode =
         slot &&
-        selection.current?.path === slot.path &&
-        selection.current.version === slot.version &&
-        selection.current.text
-          ? selection.current
+        selection?.path === slot.path &&
+        selection.version === slot.version &&
+        selection.text
+          ? selection
           : null;
       let reference: ConversationReference;
+      if (selectedCode || slot?.version === "head") {
+        const revision =
+          selectedCode?.revision ?? filesRef.current[path]?.head.revision;
+        if (!revision) throw new Error("引用内容已变化，请重新选择内容");
+        await call<FileData>("visualfiles_read", {
+          action: "file",
+          path,
+          version: slot!.version,
+          revision,
+          ...(slot!.version === "head"
+            ? { head: workspace.snapshot.info.head }
+            : {}),
+        });
+      }
       if (slot?.version === "head") {
         const version = filesRef.current[path]?.head;
         if (!version?.exists || version.binary)
@@ -300,17 +325,37 @@ export function useFileActions(workspace: WorkspaceModel) {
       setBusy(false);
     }
   };
-  const conversationActions = (path: string, slot?: Slot): MenuAction[] => [
+  const referenceScope = (path: string, slot?: Slot, directory = false) => {
+    const code =
+      slot &&
+      selection?.path === path &&
+      selection.version === slot.version &&
+      selection.text
+        ? selection
+        : null;
+    return code
+      ? `引用${slot?.version === "head" ? " HEAD" : ""}选中代码 L${code.from}–L${code.to}`
+      : slot?.version === "head"
+        ? "引用 HEAD 内容"
+        : directory
+          ? "引用目录"
+          : "引用文件";
+  };
+  const conversationActions = (
+    path: string,
+    slot?: Slot,
+    directory = false,
+  ): MenuAction[] => [
     {
-      label: "添加到当前对话",
+      label: `${referenceScope(path, slot, directory)} · 添加到当前对话草稿`,
       Icon: MessageSquare,
-      disabled: busy,
+      disabled: busy || !referenceDraftSupported(),
       action: () => void addToConversation(path, "active", slot),
     },
     {
-      label: "创建新对话",
+      label: `${referenceScope(path, slot, directory)} · 添加到新对话草稿`,
       Icon: MessageSquare,
-      disabled: busy,
+      disabled: busy || !referenceDraftSupported(),
       action: () => void addToConversation(path, "new", slot),
     },
   ];
@@ -374,7 +419,7 @@ export function useFileActions(workspace: WorkspaceModel) {
       ...item,
       separator: index === 0,
     })),
-    ...conversationActions(path).map((item, index) => ({
+    ...conversationActions(path, undefined, directory).map((item, index) => ({
       ...item,
       separator: index === 0,
     })),
@@ -413,6 +458,8 @@ export function useFileActions(workspace: WorkspaceModel) {
     entryActions,
     pathActions,
     conversationActions,
+    referenceScope,
+    draftSupported: referenceDraftSupported(),
   };
 }
 

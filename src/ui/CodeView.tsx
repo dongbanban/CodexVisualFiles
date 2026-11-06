@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { EditorState, StateEffect, type Extension } from "@codemirror/state";
 import {
   EditorView,
@@ -24,9 +24,8 @@ import { languages } from "@codemirror/language-data";
 import { MergeView } from "@codemirror/merge";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { cn } from "cn";
-import { ArrowLeft, ArrowRight, CornerDownRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { IconButton } from "./chrome.js";
+import { CodeToolbar } from "./CodeToolbar.js";
 import type { Slot, FileVersion, DefinitionLocation } from "../shared.js";
 import type { OpenTarget } from "./file-utils.js";
 import type { CodeNavigation } from "./useCodeNavigation.js";
@@ -37,6 +36,7 @@ export interface CodeSelection {
   from: number;
   to: number;
   text: string;
+  revision?: string;
 }
 interface Props {
   dark: boolean;
@@ -44,6 +44,8 @@ interface Props {
   versions: [FileVersion | null, FileVersion | null];
   diff: boolean;
   single?: boolean;
+  narrow?: boolean;
+  onActive?: (index: number) => void;
   onSelection: (selection: CodeSelection) => void;
   onScroll: (index: number, top: number) => void;
   target?: OpenTarget;
@@ -61,6 +63,22 @@ export function CodeView(props: Props) {
   const host = useRef<HTMLDivElement>(null);
   const editors = useRef<Array<EditorView | null>>([]);
   const merge = useRef<MergeView | null>(null);
+  const saved = useRef(
+    new Map<
+      string,
+      {
+        revision?: string;
+        selection: { anchor: number; head: number };
+        scroll: number;
+      }
+    >(),
+  );
+  const scrolls = useRef([0, 0]);
+  const layout = useRef({ narrow: false, active: 0 });
+  const applied = useRef<{
+    target?: OpenTarget;
+    location?: DefinitionLocation;
+  }>({});
   const latest = useRef(props);
   latest.current = props;
   const active = useRef(props.active ?? 0);
@@ -193,6 +211,7 @@ export function CodeView(props: Props) {
       EditorView.domEventHandlers({
         click: (event, view) => {
           active.current = index;
+          latest.current.onActive?.(index);
           setDefinitionAvailable(canDefine(index));
           if (event.button !== 0 || (!event.metaKey && !event.ctrlKey))
             return false;
@@ -212,6 +231,7 @@ export function CodeView(props: Props) {
       EditorView.updateListener.of((update) => {
         if (update.focusChanged && update.view.hasFocus) {
           active.current = index;
+          latest.current.onActive?.(index);
           setDefinitionAvailable(canDefine(index));
         }
         if (
@@ -224,9 +244,13 @@ export function CodeView(props: Props) {
             "行 " + line.number + "，列 " + (position - line.from + 1),
           );
         }
-        if (!update.selectionSet) return;
+        if (
+          !update.selectionSet &&
+          !(update.focusChanged && update.view.hasFocus)
+        )
+          return;
         const slot = latest.current.slots[index];
-        if (!slot) return;
+        if (!slot || active.current !== index) return;
         const range = update.state.selection.main;
         latest.current.onSelection({
           path: slot.path,
@@ -234,13 +258,23 @@ export function CodeView(props: Props) {
           from: update.state.doc.lineAt(range.from).number,
           to: update.state.doc.lineAt(range.to).number,
           text: update.state.sliceDoc(range.from, range.to),
+          revision: latest.current.versions[index]?.revision,
         });
       }),
     ];
-    const config = (index: number) => ({
-      doc: latest.current.versions[index]?.text ?? "",
-      extensions: extensions(index),
-    });
+    const config = (index: number) => {
+      const slot = props.slots[index];
+      const previous =
+        slot && saved.current.get(`${slot.path}:${slot.version}`);
+      return {
+        doc: props.versions[index]?.text ?? "",
+        extensions: extensions(index),
+        ...(previous?.revision &&
+        previous.revision === props.versions[index]?.revision
+          ? { selection: previous.selection }
+          : {}),
+      };
+    };
     if (props.diff) {
       merge.current = new MergeView({
         a: config(0),
@@ -250,7 +284,13 @@ export function CodeView(props: Props) {
         gutter: true,
       });
       editors.current = [merge.current.a, merge.current.b];
-      merge.current.dom.scrollTop = props.slots[0]?.scroll ?? 0;
+      scrolls.current = props.slots.map((slot) =>
+        slot
+          ? (saved.current.get(`${slot.path}:${slot.version}`)?.scroll ??
+            slot.scroll)
+          : 0,
+      );
+      merge.current.dom.scrollTop = scrolls.current[props.active ?? 0];
     } else {
       editors.current = props.slots
         .slice(0, props.single ? 1 : 2)
@@ -264,7 +304,9 @@ export function CodeView(props: Props) {
             ...config(index),
             parent: container,
           });
-          editor.scrollDOM.scrollTop = slot.scroll;
+          editor.scrollDOM.scrollTop =
+            saved.current.get(`${slot.path}:${slot.version}`)?.scroll ??
+            slot.scroll;
           return editor;
         });
     }
@@ -289,12 +331,32 @@ export function CodeView(props: Props) {
     if (merge.current)
       merge.current.dom.addEventListener("scroll", () => {
         const top = merge.current!.dom.scrollTop;
-        latest.current.onScroll(0, top);
-        latest.current.onScroll(1, top);
+        const indexes = latest.current.narrow
+          ? [latest.current.active ?? 0]
+          : [0, 1];
+        for (const index of indexes) {
+          scrolls.current[index] = top;
+          latest.current.onScroll(index, top);
+        }
       });
     return () => {
       disposed = true;
       definitionRequest.current++;
+      saved.current.clear();
+      editors.current.forEach((editor, index) => {
+        const slot = props.slots[index];
+        if (editor && slot)
+          saved.current.set(`${slot.path}:${slot.version}`, {
+            revision: props.versions[index]?.revision,
+            selection: {
+              anchor: editor.state.selection.main.anchor,
+              head: editor.state.selection.main.head,
+            },
+            scroll: merge.current
+              ? scrolls.current[index]
+              : editor.scrollDOM.scrollTop,
+          });
+      });
       if (merge.current) merge.current.destroy();
       else editors.current.forEach((view) => view?.destroy());
       merge.current = null;
@@ -302,6 +364,20 @@ export function CodeView(props: Props) {
       element.replaceChildren();
     };
   }, [identity]);
+  useLayoutEffect(() => {
+    const next = props.active ?? 0;
+    const previous = layout.current;
+    if (
+      merge.current &&
+      (previous.narrow !== !!props.narrow ||
+        (props.narrow && previous.active !== next))
+    ) {
+      scrolls.current[previous.active] = merge.current.dom.scrollTop;
+      merge.current.dom.scrollTop = scrolls.current[next];
+      editors.current.forEach((editor) => editor?.requestMeasure());
+    }
+    layout.current = { narrow: !!props.narrow, active: next };
+  }, [props.narrow, props.active, identity]);
   useEffect(() => {
     let changed = false;
     props.versions.forEach((version, index) => {
@@ -327,13 +403,27 @@ export function CodeView(props: Props) {
   useEffect(() => {
     active.current = props.active ?? 0;
     setDefinitionAvailable(canDefine(active.current));
-  }, [props.active]);
+    const editor = editors.current[active.current];
+    const slot = props.slots[active.current];
+    if (editor && slot) {
+      const range = editor.state.selection.main;
+      props.onSelection({
+        path: slot.path,
+        version: slot.version,
+        from: editor.state.doc.lineAt(range.from).number,
+        to: editor.state.doc.lineAt(range.to).number,
+        text: editor.state.sliceDoc(range.from, range.to),
+        revision: props.versions[active.current]?.revision,
+      });
+    }
+  }, [props.active, identity]);
   useEffect(() => {
     const line = props.target?.line;
-    if (!line) return;
+    if (!line || props.target === applied.current.target) return;
     const index = props.slots.findIndex((slot) => slot?.version === "current");
     const editor = editors.current[index];
     if (editor) {
+      applied.current.target = props.target;
       const from = editor.state.doc.line(
         Math.max(1, Math.min(line, editor.state.doc.lines)),
       ).from;
@@ -347,7 +437,7 @@ export function CodeView(props: Props) {
 
   useEffect(() => {
     const location = props.location;
-    if (!location) return;
+    if (!location || location === applied.current.location) return;
     const index = props.slots.findIndex(
       (slot) =>
         slot?.path === location.path && slot.version === location.version,
@@ -356,6 +446,7 @@ export function CodeView(props: Props) {
     if (!editor || props.versions[index]?.revision !== location.revision)
       return;
     active.current = index;
+    applied.current.location = location;
     setDefinitionAvailable(canDefine(index));
     const from = Math.min(location.from, editor.state.doc.length);
     const to = Math.min(Math.max(from, location.to), editor.state.doc.length);
@@ -367,43 +458,14 @@ export function CodeView(props: Props) {
   }, [props.location, identity]);
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-7 shrink-0 items-center gap-1 border-b bg-muted/15 px-2">
-        <IconButton
-          label="后退（Alt＋←）"
-          disabled={!props.navigation.back}
-          onClick={() => navigate("back")}
-        >
-          <ArrowLeft className="size-3.5" />
-        </IconButton>
-        <IconButton
-          label="前进（Alt＋→）"
-          disabled={!props.navigation.forward}
-          onClick={() => navigate("forward")}
-        >
-          <ArrowRight className="size-3.5" />
-        </IconButton>
-        <IconButton
-          label={
-            definitionAvailable
-              ? "跳转到定义（JS/TS；F12 或 ⌘/Ctrl＋点击；支持项目内依赖）"
-              : "定义跳转仅支持 JS/TS"
-          }
-          disabled={defining || !definitionAvailable}
-          onClick={() => void jumpToDefinition()}
-        >
-          {defining ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <CornerDownRight className="size-3.5" />
-          )}
-        </IconButton>
-        <span className="text-xs text-muted-foreground">
-          跳转到定义{definitionAvailable ? "" : " · 仅 JS/TS"}
-        </span>
-        <span className="ml-auto truncate text-xs text-muted-foreground">
-          {cursorLabel}
-        </span>
-      </div>
+      <CodeToolbar
+        navigation={props.navigation}
+        navigate={navigate}
+        definitionAvailable={definitionAvailable}
+        defining={defining}
+        jump={() => void jumpToDefinition()}
+        cursorLabel={cursorLabel}
+      />
       <div
         ref={host}
         className={cn(
@@ -413,6 +475,9 @@ export function CodeView(props: Props) {
             ? "[&_.cm-mergeView]:h-full [&_.cm-mergeView]:overflow-auto [&_.cm-mergeViewEditors]:min-h-full [&_.cm-editor]:h-auto [&_.cm-editor]:min-h-full [&_.cm-scroller]:overflow-visible"
             : "grid [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto",
           !props.diff && (props.single ? "grid-cols-1" : "grid-cols-2"),
+          props.diff &&
+            props.narrow &&
+            (props.active === 0 ? "cm-show-head" : "cm-show-current"),
         )}
       />
     </div>

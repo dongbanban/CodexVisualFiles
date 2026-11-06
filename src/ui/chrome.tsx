@@ -37,7 +37,7 @@ export function BuildInfo({ binding }: { binding?: Binding }) {
       className="shrink-0 text-xs text-muted-foreground"
       title={`界面 v${VERSION} · ${BUILD_ID}${binding?.build ? `；服务 v${binding.version} · ${binding.build}` : ""}${mismatch ? "；版本不一致，请重新打开面板" : ""}`}
     >
-      v{VERSION} · {BUILD_ID}
+      v{VERSION}
       {mismatch ? "（请重新打开面板）" : ""}
     </span>
   );
@@ -71,11 +71,15 @@ export function ActionDropdown({
   Icon,
   actions,
   disabled,
+  children,
+  description,
 }: {
   label: string;
   Icon: LucideIcon;
   actions: MenuAction[];
   disabled?: boolean;
+  children?: ReactNode;
+  description?: string;
 }) {
   return (
     <DropdownMenu>
@@ -83,16 +87,22 @@ export function ActionDropdown({
         render={
           <Button
             variant="ghost"
-            size="icon-xs"
+            size={children ? "xs" : "icon-xs"}
             title={label}
             aria-label={label}
             disabled={disabled}
           >
             <Icon className="size-3.5" />
+            {children}
           </Button>
         }
       />
       <DropdownMenuContent align="end" className="min-w-48">
+        {description && (
+          <div className="max-w-72 px-2 py-1.5 text-xs text-muted-foreground break-words">
+            {description}
+          </div>
+        )}
         {actions.map((item) => (
           <div key={item.label}>
             {item.separator && <DropdownMenuSeparator />}

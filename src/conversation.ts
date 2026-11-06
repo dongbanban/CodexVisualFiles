@@ -14,6 +14,17 @@ export interface ConversationReference {
 }
 export type ConversationTarget = "active" | "new";
 
+export function supportsReferenceDraft(
+  api: Pick<OpenAIMessage, "send"> | undefined,
+  capability: unknown,
+) {
+  const draft =
+    capability && typeof capability === "object" && "draft" in capability
+      ? capability.draft
+      : null;
+  return !!api && !!draft && typeof draft === "object";
+}
+
 export function referenceDraft(
   reference: ConversationReference,
   target: ConversationTarget,
@@ -72,11 +83,7 @@ export async function addReferenceDraft(
   reference: ConversationReference,
   target: ConversationTarget,
 ) {
-  const draft =
-    capability && typeof capability === "object" && "draft" in capability
-      ? capability.draft
-      : null;
-  if (!api || !draft || typeof draft !== "object")
+  if (!api || !supportsReferenceDraft(api, capability))
     throw new Error("当前客户端不支持添加引用草稿，请更新客户端或复制路径");
   const result = await api.send(referenceDraft(reference, target));
   if (result.isError) throw new Error("未能添加引用草稿，请稍后重试");

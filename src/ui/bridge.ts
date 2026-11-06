@@ -4,9 +4,15 @@ import {
 } from "@modelcontextprotocol/ext-apps";
 import { OpenAIExtensions } from "@openai/mcp-extensions/app";
 import { VERSION, type Binding } from "../shared.js";
+import { supportsReferenceDraft } from "../conversation.js";
 
 export const bridge = new McpApp({ name: "visualfiles", version: VERSION }, {});
 export const extensions = new OpenAIExtensions(bridge);
+export const referenceDraftSupported = () =>
+  supportsReferenceDraft(
+    extensions.message,
+    bridge.getHostCapabilities()?.experimental?.["openai/message"],
+  );
 export let initialBinding: Binding | null = null;
 let receiveBinding: ((binding: Binding) => void) | null = null;
 bridge.ontoolresult = (result) => {

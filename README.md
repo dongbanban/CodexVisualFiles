@@ -1,6 +1,6 @@
 # VisualFiles
 
-在 Codex 独立面板中浏览本机项目、查看代码与 Git Diff，并把文件或选中代码引用到对话。当前版本 **0.7.15**，支持 macOS（Apple Silicon / Intel）。
+在 Codex 独立面板中浏览本机项目、查看代码与 Git Diff，并把文件或选中代码引用到对话。当前版本 **0.7.16**，支持 macOS（Apple Silicon / Intel）。
 
 ## 功能
 

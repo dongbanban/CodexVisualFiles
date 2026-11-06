@@ -245900,7 +245900,7 @@ import { readFile as readFile5 } from "node:fs/promises";
 
 // src/shared.ts
 var VERSION = "0.7.14";
-var BUILD_ID = true ? "9001885872" : "development";
+var BUILD_ID = true ? "c8e26e9ab7" : "development";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,
@@ -246652,7 +246652,19 @@ var Workspace = class _Workspace {
   }
   async loadState() {
     try {
-      return JSON.parse(await readFile3(this.statePath, "utf8"));
+      const state = JSON.parse(
+        await readFile3(this.statePath, "utf8")
+      );
+      const directories = await Promise.all(
+        state.expanded.map(
+          (path) => this.list(path).then(
+            () => true,
+            (error62) => !["ENOENT", "ENOTDIR"].includes(errorCode(error62) ?? "")
+          )
+        )
+      );
+      state.expanded = state.expanded.filter((_, i) => directories[i]);
+      return state;
     } catch {
       return emptyState();
     }

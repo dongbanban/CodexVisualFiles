@@ -79,7 +79,7 @@ export function TreeSidebar({
         <div className="flex gap-0.5 rounded-lg bg-muted p-0.5">
           <Button
             size="xs"
-            variant={stored.searchMode === "name" ? "secondary" : "ghost"}
+            variant={stored.searchMode === "name" ? "default" : "ghost"}
             aria-pressed={stored.searchMode === "name"}
             onClick={() => setStored((old) => ({ ...old, searchMode: "name" }))}
           >
@@ -87,7 +87,7 @@ export function TreeSidebar({
           </Button>
           <Button
             size="xs"
-            variant={stored.searchMode === "text" ? "secondary" : "ghost"}
+            variant={stored.searchMode === "text" ? "default" : "ghost"}
             aria-pressed={stored.searchMode === "text"}
             onClick={() => setStored((old) => ({ ...old, searchMode: "text" }))}
           >

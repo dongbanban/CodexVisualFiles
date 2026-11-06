@@ -473,7 +473,19 @@ export class Workspace {
   }
   async loadState(): Promise<SavedState> {
     try {
-      return JSON.parse(await readFile(this.statePath, "utf8")) as SavedState;
+      const state = JSON.parse(
+        await readFile(this.statePath, "utf8"),
+      ) as SavedState;
+      const directories = await Promise.all(
+        state.expanded.map((path) =>
+          this.list(path).then(
+            () => true,
+            (error) => !["ENOENT", "ENOTDIR"].includes(errorCode(error) ?? ""),
+          ),
+        ),
+      );
+      state.expanded = state.expanded.filter((_, i) => directories[i]);
+      return state;
     } catch {
       return emptyState();
     }

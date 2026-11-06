@@ -242,8 +242,10 @@ codex plugin add visualfiles@visualfiles-local
 
 `release/` 是供 GitHub marketplace 直接安装的生成产物，随源码一起提交。维护者修改运行代码、启动脚本或包内文档后，应运行检查、构建和打包，并一并提交更新后的 `release/`。仓库不保留测试文件；行为验收使用临时隔离环境，完成后清理。`npm version` 的版本生命周期会同步插件清单、`src/shared.ts` 和 README，`npm run check` 校验这些文件及锁文件与 `package.json` 一致；自动发布统一递增版本并提交发布产物。
 
-代码规范见 [AGENTS.md](AGENTS.md)，详细行为约定见 [PLAN.md](PLAN.md)，产品、交互与官方目录发布评审见 [REVIEW.md](docs/REVIEW.md)。
+`docs/` 和 `PLAN.md` 仅保留在源码仓库，不复制到 `release/` 或发布 ZIP；重新打包会清理旧产物中残留的文档。
 
-定义跳转结果缓存的待实施方案见 [技术设计](docs/DEFINITION_CACHE_DESIGN.md)，包含失效规则、并发处理、容量约束与验收标准；当前版本尚未实现跨请求结果缓存。
+代码规范见 [AGENTS.md](AGENTS.md)，详细行为约定见 [PLAN.md](https://github.com/dongbanban/CodexVisualFiles/blob/main/PLAN.md)，产品与交互评审见 [PRODUCT_UI_REVIEW.md](https://github.com/dongbanban/CodexVisualFiles/blob/main/docs/PRODUCT_UI_REVIEW.md)。
 
-核心体验升级（搜索、Markdown、窄屏、引用与错误恢复）的逐轮实施及验收边界见 [升级计划与记录](docs/UPGRADE_PLAN.md)。
+定义跳转结果缓存的待实施方案见 [技术设计](https://github.com/dongbanban/CodexVisualFiles/blob/main/docs/DEFINITION_CACHE_DESIGN.md)，包含失效规则、并发处理、容量约束与验收标准；当前版本尚未实现跨请求结果缓存。
+
+核心体验升级（搜索、Markdown、窄屏、引用与错误恢复）的逐轮实施及验收边界见 [升级计划与记录](https://github.com/dongbanban/CodexVisualFiles/blob/main/docs/UPGRADE_PLAN.md)。

@@ -7,9 +7,7 @@ for (const path of [
   "dist",
   "skills",
   "AGENTS.md",
-  "docs",
   "README.md",
-  "PLAN.md",
 ]) {
   await cp(path, `release/${path}`, { recursive: true });
 }

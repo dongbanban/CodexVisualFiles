@@ -20,13 +20,24 @@ export function FileOperationDialog({
   actions: FileActions;
   root: string;
 }) {
-  const { busy, dialog, setDialog, destinations, error, submit } = actions;
+  const {
+    busy,
+    dialog,
+    setDialog,
+    destinations,
+    destinationsLoading,
+    destinationsError,
+    retryDestinations,
+    canSubmitMove,
+    error,
+    submit,
+  } = actions;
   const labels = {
     createFile: "新建文件",
     createDirectory: "新建文件夹",
     rename: "重命名",
     move: "移动到文件夹",
-    trash: "删除",
+    trash: "移到废纸篓",
   };
   return (
     <ShadcnDialog
@@ -66,9 +77,31 @@ export function FileOperationDialog({
               </code>
             </div>
             <ScrollArea className="h-56 rounded-lg border">
+              {destinationsLoading ? (
+                <p role="status" className="p-3 text-muted-foreground">
+                  正在读取目标目录…
+                </p>
+              ) : destinationsError ? (
+                <div role="alert" className="p-3 text-destructive">
+                  {destinationsError}
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={retryDestinations}
+                  >
+                    重试读取目录
+                  </Button>
+                </div>
+              ) : (
+                !destinations.length && (
+                  <p className="p-3 text-muted-foreground">没有可选子目录</p>
+                )
+              )}
               {destinations.map((node) => (
                 <Button
                   key={node.path}
+                  disabled={busy || destinationsLoading}
                   variant="ghost"
                   className="w-full justify-start rounded-none text-xs font-normal"
                   onClick={() =>
@@ -104,7 +137,7 @@ export function FileOperationDialog({
         )}
         {error && (
           <p role="alert" className="text-sm text-destructive break-words">
-            {error}
+            {error.message}
           </p>
         )}
         <DialogFooter>
@@ -117,10 +150,20 @@ export function FileOperationDialog({
           </Button>
           <Button
             variant={dialog?.kind === "trash" ? "destructive" : "default"}
-            disabled={busy}
+            disabled={busy || (dialog?.kind === "move" && !canSubmitMove)}
             onClick={() => void submit()}
           >
-            {busy ? "处理中…" : dialog?.kind === "trash" ? "删除" : "确认"}
+            {busy
+              ? "处理中…"
+              : dialog?.kind === "trash"
+                ? "移到废纸篓"
+                : dialog?.kind === "move"
+                  ? "移动到此目录"
+                  : dialog?.kind === "createFile"
+                    ? "新建文件"
+                    : dialog?.kind === "createDirectory"
+                      ? "新建文件夹"
+                      : "重命名"}
           </Button>
         </DialogFooter>
       </DialogContent>

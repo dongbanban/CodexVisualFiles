@@ -12,6 +12,7 @@ import { Checkbox } from "./components/ui/checkbox.js";
 import { Label } from "./components/ui/label.js";
 import { ScrollArea } from "./components/ui/scroll-area.js";
 import { IconButton, FileContext } from "./chrome.js";
+import { cn } from "cn";
 import { TreeNodes } from "./TreeNodes.js";
 import type { WorkspaceModel } from "./useWorkspace.js";
 import type { FileActions } from "./useFileActions.js";
@@ -37,10 +38,19 @@ export function TreeSidebar({
     setSelected,
     open,
   } = workspace;
-  const { busy, setDialog, drop, entryActions } = actions;
+  const {
+    busy,
+    setDialog,
+    drop,
+    entryActions,
+    dragOver,
+    dragTarget,
+    dragged,
+    moveProgress,
+  } = actions;
 
   return (
-    <aside className="flex h-full min-h-0 flex-col bg-muted/25">
+    <aside className="relative flex h-full min-h-0 flex-col bg-muted/25">
       <div className="relative mx-2 mt-3">
         <Search className="pointer-events-none absolute top-2 left-2 size-3.5 text-muted-foreground" />
         <Input
@@ -107,11 +117,14 @@ export function TreeSidebar({
       </div>
       <FileContext actions={entryActions("", true)}>
         <div
-          className="flex h-8 items-center gap-0.5 border-y px-1.5"
-          onDragOver={(event) => {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "move";
-          }}
+          className={cn(
+            "flex h-8 items-center gap-0.5 border-y px-1.5",
+            dragTarget?.directory === "" &&
+              (dragTarget.valid
+                ? "bg-accent ring-1 ring-primary"
+                : "bg-destructive/10 ring-1 ring-destructive"),
+          )}
+          onDragOver={(event) => dragOver(event, "")}
           onDrop={(event) => void drop(event, "")}
         >
           <Button
@@ -155,10 +168,25 @@ export function TreeSidebar({
           </IconButton>
         </div>
       </FileContext>
+      {(dragged || moveProgress) && (
+        <p
+          role="status"
+          className={cn(
+            "pointer-events-none absolute inset-x-2 bottom-10 z-10 rounded-md border bg-popover px-2 py-1 text-xs break-all shadow-sm",
+            dragTarget && !dragTarget.valid && "text-destructive",
+          )}
+        >
+          {moveProgress
+            ? `正在移动到：${moveProgress}`
+            : dragTarget
+              ? `${dragTarget.valid ? "移动到" : "不能移动到此位置"}：/${dragTarget.directory || "（项目根目录）"}`
+              : "拖放到目标目录；也可用菜单移动"}
+        </p>
+      )}
       <ScrollArea className="min-h-0 flex-1">
         <div
           className="min-h-full py-1 pr-[calc(0.625rem+8px)] pb-4"
-          onDragOver={(event) => event.preventDefault()}
+          onDragOver={(event) => dragOver(event, "")}
           onDrop={(event) => void drop(event, "")}
         >
           {query.trim() ? (
@@ -187,7 +215,12 @@ export function TreeSidebar({
               {searchError && (
                 <div role="alert" className="p-3 text-destructive">
                   {searchError}
-                  <Button size="xs" variant="outline" onClick={retrySearch}>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    disabled={!!workspace.connectionError}
+                    onClick={retrySearch}
+                  >
                     重试搜索
                   </Button>
                 </div>

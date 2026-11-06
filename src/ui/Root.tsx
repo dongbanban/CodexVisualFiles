@@ -259,7 +259,7 @@ export function Root() {
                   className="flex items-center gap-2 text-xs text-muted-foreground"
                 >
                   <RefreshCw className="size-3 animate-spin" />
-                  正在选择浏览项目…
+                  正在切换浏览项目…
                 </span>
               )}
             </DialogFooter>

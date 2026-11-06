@@ -7,7 +7,7 @@ import {
   MessageSquare,
   Eye,
 } from "lucide-react";
-import { emptyViewer, type FileVersion } from "../shared.js";
+import { type FileVersion } from "../shared.js";
 import { CodeView } from "./CodeView.js";
 import { Button } from "./components/ui/button.js";
 import { cn } from "cn";
@@ -98,7 +98,9 @@ export function ContentViewer({
         <FileCode2 className="size-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-[1_1_10rem] break-all">
           <div className="font-medium">{path ? base(path) : "选择文件"}</div>
-          {path && <div className="text-xs text-muted-foreground">{path}</div>}
+          {path && path !== base(path) && (
+            <div className="text-xs text-muted-foreground">{path}</div>
+          )}
         </div>
         {path && (
           <>
@@ -143,13 +145,7 @@ export function ContentViewer({
               Icon={MoreHorizontal}
               actions={pathActions(path)}
             />
-            <IconButton
-              label="关闭文件"
-              onClick={() => {
-                setSelection(null);
-                setStored((old) => ({ ...old, viewer: emptyViewer() }));
-              }}
-            >
+            <IconButton label="关闭文件" onClick={workspace.close}>
               <X className="size-3.5" />
             </IconButton>
           </>
@@ -245,7 +241,11 @@ export function ContentViewer({
                     version={versions[index]!}
                     bindingId={binding.bindingId}
                     onOpen={open}
-                    anchor={index === active ? target?.anchor : undefined}
+                    target={
+                      slot.version === (target?.version ?? "current")
+                        ? target
+                        : undefined
+                    }
                     onError={workspace.setError}
                     onScroll={(top) => onScroll(index, top)}
                   />

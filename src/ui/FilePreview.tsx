@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MarkdownCode } from "./MarkdownCode.js";
@@ -50,7 +50,7 @@ export function FilePreview({
   bindingId,
   onOpen,
   onScroll,
-  anchor,
+  target,
   onError,
 }: {
   slot: Slot;
@@ -58,63 +58,35 @@ export function FilePreview({
   bindingId: string;
   onOpen: (path: string, target?: OpenTarget) => void;
   onScroll: (top: number) => void;
-  anchor?: string;
+  target?: OpenTarget;
   onError: (error: unknown) => void;
 }) {
   const article = useRef<HTMLElement>(null);
-  const locate = (fragment: string) => {
-    const target = Array.from(
-      article.current?.querySelectorAll<HTMLElement>("[data-anchor]") ?? [],
-    ).find((node) => node.dataset.anchor === fragment);
-    if (target && article.current)
-      article.current.scrollTop +=
-        target.getBoundingClientRect().top -
-        article.current.getBoundingClientRect().top;
-    else onError(`未找到章节：${fragment || "（空锚点）"}`);
-  };
+  const locate = useCallback(
+    (fragment: string) => {
+      const target = Array.from(
+        article.current?.querySelectorAll<HTMLElement>("[data-anchor], [id]") ??
+          [],
+      ).find(
+        (node) => node.dataset.anchor === fragment || node.id === fragment,
+      );
+      if (target && article.current)
+        article.current.scrollTop +=
+          target.getBoundingClientRect().top -
+          article.current.getBoundingClientRect().top;
+      else onError(`未找到章节：${fragment || "（空锚点）"}`);
+    },
+    [onError],
+  );
   useEffect(() => {
     if (article.current) article.current.scrollTop = slot.scroll;
   }, [slot.path, slot.version]);
   useEffect(() => {
-    if (anchor !== undefined && version.exists && !version.binary)
-      locate(anchor);
-  }, [anchor, slot.path, slot.version, slot.opened, version.text]);
-  if (!version.exists)
-    return (
-      <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
-        文件不存在
-      </div>
-    );
-  if (version.image)
-    return (
-      <div className="flex h-full items-center justify-center overflow-auto bg-muted/30 p-5 [&_img]:max-h-full [&_img]:max-w-full [&_img]:object-contain">
-        <img src={version.image} alt={slot.path} />
-      </div>
-    );
-  if (version.tooLarge)
-    return (
-      <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
-        文件大小 {(version.size / 1024 / 1024).toFixed(1)} MB，超过 12 MB
-        预览上限。可复制路径在本机工具中查看。
-      </div>
-    );
-  if (version.binary)
-    return (
-      <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
-        二进制文件 · {version.size.toLocaleString()} 字节
-      </div>
-    );
-  return (
-    <article
-      ref={article}
-      onScroll={(event) => onScroll(event.currentTarget.scrollTop)}
-      className="markdown-preview h-full overflow-auto p-6 text-sm leading-7 break-words [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:my-4 [&_h2]:text-xl [&_img]:max-w-full [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-4"
-    >
-      {/\.mdx$/i.test(slot.path) && (
-        <p className="mb-3 text-xs text-muted-foreground">
-          MDX 仅以 Markdown 预览，组件和表达式不会执行。
-        </p>
-      )}
+    if (target?.anchor !== undefined && version.exists && !version.binary)
+      locate(target.anchor);
+  }, [target, slot.path, slot.version]);
+  const rendered = useMemo(
+    () => (
       <ReactMarkdown
         remarkPlugins={[remarkGfm, markdownAnchors]}
         remarkRehypeOptions={{
@@ -170,6 +142,46 @@ export function FilePreview({
       >
         {version.text}
       </ReactMarkdown>
+    ),
+    [version.text, slot.path, slot.version, bindingId, onOpen, onError, locate],
+  );
+  if (!version.exists)
+    return (
+      <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
+        文件不存在
+      </div>
+    );
+  if (version.image)
+    return (
+      <div className="flex h-full items-center justify-center overflow-auto bg-muted/30 p-5 [&_img]:max-h-full [&_img]:max-w-full [&_img]:object-contain">
+        <img src={version.image} alt={slot.path} />
+      </div>
+    );
+  if (version.tooLarge)
+    return (
+      <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
+        文件大小 {(version.size / 1024 / 1024).toFixed(1)} MB，超过 12 MB
+        预览上限。可复制路径在本机工具中查看。
+      </div>
+    );
+  if (version.binary)
+    return (
+      <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
+        二进制文件 · {version.size.toLocaleString()} 字节
+      </div>
+    );
+  return (
+    <article
+      ref={article}
+      onScroll={(event) => onScroll(event.currentTarget.scrollTop)}
+      className="markdown-preview h-full overflow-auto p-6 text-sm leading-7 break-words [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:my-4 [&_h2]:text-xl [&_img]:max-w-full [&_pre]:overflow-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_code]:font-mono [&_code]:text-xs [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-4"
+    >
+      {/\.mdx$/i.test(slot.path) && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          MDX 仅以 Markdown 预览，组件和表达式不会执行。
+        </p>
+      )}
+      {rendered}
     </article>
   );
 }

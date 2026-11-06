@@ -9,6 +9,7 @@ import {
   type Snapshot,
   type FileData,
   type Slot,
+  type TreeEntry,
   type DefinitionLocation,
 } from "../shared.js";
 import { type CodeSelection } from "./CodeView.js";
@@ -34,6 +35,11 @@ export function useWorkspace(binding: Binding) {
   const [query, setQuery] = useState("");
   const [syncError, setSyncError] = useState("");
   const [operationError, setOperationError] = useState("");
+  const [readError, setReadError] = useState<{
+    path: string;
+    target?: OpenTarget;
+    message: string;
+  } | null>(null);
   const [connectionError, setConnectionError] = useState("");
   const blocked = useRef<ToolError | null>(null);
   const setError = useCallback((error: unknown) => {
@@ -44,7 +50,6 @@ export function useWorkspace(binding: Binding) {
   }, []);
   const clearError = () => {
     setOperationError("");
-    setSyncError("");
   };
   const setNotice = useCallback((value: string) => {
     if (alive.current && value) toast.message(value, { duration: 3000 });
@@ -270,7 +275,6 @@ export function useWorkspace(binding: Binding) {
     setManualRefreshing(true);
     try {
       if (await refresh()) setNotice("刷新完成");
-      else setError(blocked.current ?? refreshError.current ?? "刷新失败");
     } finally {
       if (alive.current) setManualRefreshing(false);
     }
@@ -304,17 +308,32 @@ export function useWorkspace(binding: Binding) {
     JSON.stringify(snapshot.info.changes),
     call,
   );
+  const readDirectory = useCallback(
+    async (path: string): Promise<TreeEntry[]> => {
+      const data = await call<Snapshot>("visualfiles_read", {
+        action: "snapshot",
+        directories: [path],
+        paths: [],
+      });
+      if (data.errors[path]) throw new Error(data.errors[path]);
+      return data.directories[path] ?? [];
+    },
+    [call],
+  );
 
   const open = useCallback(
     (path: string, destination?: OpenTarget) => {
       const request = ++openRequest.current;
       setCodeLocation(null);
       setSelected(path);
+      setReadError(null);
+      setOperationError("");
       setReading(true);
       setTarget(undefined);
       setSelection(null);
       openQueue.current = openQueue.current
         .then(async () => {
+          if (!alive.current || request !== openRequest.current) return;
           const data = await call<FileData>("visualfiles_read", {
             action: "file",
             path,
@@ -343,10 +362,16 @@ export function useWorkspace(binding: Binding) {
           }));
         })
         .catch((error) => {
-          if (alive.current) setError(error);
+          if (alive.current && request === openRequest.current)
+            setReadError({
+              path,
+              target: destination,
+              message: errorText(error),
+            });
         })
         .finally(() => {
-          if (alive.current) setReading(false);
+          if (alive.current && request === openRequest.current)
+            setReading(false);
         });
     },
     [call, snapshot.info.head],
@@ -402,14 +427,29 @@ export function useWorkspace(binding: Binding) {
     selection,
     setSelection,
     call,
+    readDirectory,
     refresh,
     open,
+    close: () => {
+      openRequest.current++;
+      setReading(false);
+      setReadError(null);
+      setTarget(undefined);
+      setCodeLocation(null);
+      setSelection(null);
+      setStored((old) => ({ ...old, viewer: emptyViewer() }));
+    },
     onScroll,
     toggle,
     findDefinition,
     setNotice,
     setError,
-    error: connectionError || operationError || syncError,
+    error: operationError,
+    syncError,
+    readError,
+    retryRead: () => {
+      if (readError) open(readError.path, readError.target);
+    },
     connectionError,
     clearError,
   };

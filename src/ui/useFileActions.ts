@@ -1,22 +1,8 @@
 import React, { useEffect, useState } from "react";
-import {
-  FilePlus2,
-  FolderPlus,
-  Pencil,
-  Move,
-  Trash2,
-  Copy,
-  ClipboardPaste,
-  Scissors,
-  MessageSquare,
-  ExternalLink,
-} from "lucide-react";
-import {
-  type Snapshot,
-  type Slot,
-  type TreeEntry,
-  type FileData,
-} from "../shared.js";
+import { Copy, MessageSquare } from "lucide-react";
+import { type Slot, type TreeEntry, type FileData } from "../shared.js";
+import { entryMenu, type FileDialogState } from "./file-action-menus.js";
+import { useMoveTargets, canMoveTo } from "./useMoveTargets.js";
 import { type MenuAction } from "./chrome.js";
 import {
   addReferenceDraft,
@@ -30,14 +16,8 @@ import {
   openFileInCodex,
   referenceDraftSupported,
 } from "./bridge.js";
-import { parent, base, joinPath, ancestors } from "./file-utils.js";
+import { parent, base, joinPath, ancestors, errorText } from "./file-utils.js";
 const INTERNAL_DRAG_TYPE = "application/x-visualfiles";
-
-export interface FileDialogState {
-  kind: "createFile" | "createDirectory" | "rename" | "move" | "trash";
-  path: string;
-  value: string;
-}
 
 export function useFileActions(workspace: WorkspaceModel) {
   const {
@@ -51,8 +31,6 @@ export function useFileActions(workspace: WorkspaceModel) {
     call,
     refresh,
     setNotice,
-    setError,
-    clearError,
   } = workspace;
   const [busy, setBusy] = useState(false);
   const [clipboard, setClipboard] = useState<{
@@ -60,44 +38,71 @@ export function useFileActions(workspace: WorkspaceModel) {
     path: string;
   } | null>(null);
   const [dialog, setDialog] = useState<FileDialogState | null>(null);
-  const [destinations, setDestinations] = useState<TreeEntry[]>([]);
+  const targets = useMoveTargets(dialog, workspace.readDirectory);
+  const [error, setFailure] = useState<{
+    message: string;
+    retry?: () => void;
+    path?: string;
+    retryLabel?: string;
+  } | null>(null);
+  const clearError = () => setFailure(null);
+  const setError = (
+    value: unknown,
+    retry?: () => void,
+    path?: string,
+    retryLabel?: string,
+  ) => {
+    if (alive.current)
+      setFailure({ message: errorText(value), retry, path, retryLabel });
+  };
   useEffect(() => {
-    if (dialog?.kind !== "move") return;
-    let cancelled = false;
-    setDestinations([]);
-    void call<Snapshot>("visualfiles_read", {
-      action: "snapshot",
-      directories: [dialog.value],
-      paths: [],
-    })
-      .then((data) => {
-        if (cancelled) return;
-        if (data.errors[dialog.value])
-          throw new Error(data.errors[dialog.value]);
-        setDestinations(
-          (data.directories[dialog.value] ?? []).filter(
-            (node) => node.directory && !node.deleted,
-          ),
-        );
-      })
-      .catch((error) => {
-        if (!cancelled) setError(error);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [dialog?.kind, dialog?.value, call]);
+    setFailure(null);
+  }, [dialog?.kind, dialog?.path]);
+  const [dragged, setDragged] = useState<string | null>(null);
+  const [dragTarget, setDragTarget] = useState<{
+    directory: string;
+    valid: boolean;
+  } | null>(null);
+  const [moveProgress, setMoveProgress] = useState("");
+  const endDrag = () => {
+    setDragged(null);
+    setDragTarget(null);
+  };
+  const dragOver = (
+    event: React.DragEvent,
+    directory: string,
+    directoryTarget = true,
+  ) => {
+    if (!event.dataTransfer.types.includes(INTERNAL_DRAG_TYPE)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const valid =
+      !!dragged && !busy && directoryTarget && canMoveTo(dragged, directory);
+    event.dataTransfer.dropEffect = valid ? "move" : "none";
+    setDragTarget((old) =>
+      old?.directory === directory && old.valid === valid
+        ? old
+        : { directory, valid },
+    );
+  };
   const absolutePath = (path: string) =>
     path ? `${binding.root!.replace(/\/$/, "")}/${path}` : binding.root!;
   const copyText = async (value: string) => {
+    clearError();
     try {
       await navigator.clipboard.writeText(value);
-      setNotice("已复制");
+      setNotice("已复制路径");
     } catch {
-      setError("剪贴板不可用，请检查客户端的剪贴板权限");
+      setError(
+        "剪贴板不可用，请检查客户端的剪贴板权限",
+        () => void copyText(value),
+        undefined,
+        "重试复制",
+      );
     }
   };
   const copyEntry = (mode: "copy" | "cut", path: string) => {
+    clearError();
     setClipboard({ mode, path });
     setNotice(
       `已${mode === "copy" ? "复制" : "剪切"} ${base(path)}，请在目标目录粘贴`,
@@ -116,7 +121,8 @@ export function useFileActions(workspace: WorkspaceModel) {
         throw new Error("Codex 原生查看仅支持文件，请选择文件");
       await openFileInCodex(file.absolutePath);
     } catch (error) {
-      if (alive.current) setError(error);
+      if (alive.current)
+        setError(error, () => void openInCodex(path), path, "重试原生查看");
     } finally {
       if (alive.current) setBusy(false);
     }
@@ -239,13 +245,14 @@ export function useFileActions(workspace: WorkspaceModel) {
             : "已添加到当前对话草稿",
         );
     } catch (error) {
-      if (alive.current) setError(error);
+      if (alive.current) setError(error, undefined, path);
     } finally {
       if (alive.current) setBusy(false);
     }
   }
   async function submit() {
-    if (!dialog || busy) return;
+    if (!dialog || busy || (dialog.kind === "move" && !targets.canSubmitMove))
+      return;
     setBusy(true);
     clearError();
     try {
@@ -274,13 +281,18 @@ export function useFileActions(workspace: WorkspaceModel) {
         destination,
       });
       setNotice(
-        dialog.kind === "trash" ? "已删除，可在系统废纸篓中找回" : "操作完成",
+        dialog.kind === "trash"
+          ? "已删除，可在系统废纸篓中找回"
+          : dialog.kind === "move"
+            ? `已移动到 ${destination}`
+            : "操作完成",
       );
       if (destination) {
         relocate(dialog.path, destination);
+        setSelected(destination);
       }
-      await refresh();
       setDialog(null);
+      await refresh();
     } catch (error) {
       setError(error);
     } finally {
@@ -288,6 +300,8 @@ export function useFileActions(workspace: WorkspaceModel) {
     }
   }
   const drag = (event: React.DragEvent, node: TreeEntry) => {
+    clearError();
+    setDragged(node.path);
     event.dataTransfer.clearData();
     event.dataTransfer.setData(
       INTERNAL_DRAG_TYPE,
@@ -305,15 +319,20 @@ export function useFileActions(workspace: WorkspaceModel) {
       const data = JSON.parse(raw);
       if (data.bindingId !== binding.bindingId || typeof data.path !== "string")
         return;
-      if (parent(data.path) === directory) return;
+      if (!canMoveTo(data.path, directory))
+        throw new Error("不能移动到当前目录、自身或子目录");
+      clearError();
       setBusy(true);
       const destination = joinPath(directory, base(data.path));
-      await call("visualfiles_mutate", {
+      setMoveProgress(destination);
+      const result = await call<{ path: string }>("visualfiles_mutate", {
         action: "move",
         path: data.path,
         destination,
       });
-      relocate(data.path, destination);
+      relocate(data.path, result.path);
+      setSelected(result.path);
+      setNotice(`已移动到 ${result.path}`);
       setStored((old) => ({
         ...old,
         expanded: [...new Set([...old.expanded, directory])],
@@ -323,6 +342,8 @@ export function useFileActions(workspace: WorkspaceModel) {
       setError(error);
     } finally {
       setBusy(false);
+      setMoveProgress("");
+      endDrag();
     }
   };
   const referenceScope = (path: string, slot?: Slot, directory = false) => {
@@ -334,7 +355,7 @@ export function useFileActions(workspace: WorkspaceModel) {
         ? selection
         : null;
     return code
-      ? `引用${slot?.version === "head" ? " HEAD" : ""}选中代码 L${code.from}–L${code.to}`
+      ? `引用${slot?.version === "head" ? " HEAD " : ""}选中代码 L${code.from}–L${code.to}`
       : slot?.version === "head"
         ? "引用 HEAD 内容"
         : directory
@@ -371,87 +392,33 @@ export function useFileActions(workspace: WorkspaceModel) {
       action: () => void copyText(path || "."),
     },
   ];
-  const entryActions = (path: string, directory: boolean): MenuAction[] => [
-    ...(directory
-      ? [
-          {
-            label: "新建文件",
-            Icon: FilePlus2,
-            disabled: busy,
-            action: () => setDialog({ kind: "createFile", path, value: "" }),
-          },
-          {
-            label: "新建文件夹",
-            Icon: FolderPlus,
-            disabled: busy,
-            action: () =>
-              setDialog({ kind: "createDirectory", path, value: "" }),
-          },
-        ]
-      : [
-          {
-            label: "Codex 原生查看",
-            Icon: ExternalLink,
-            disabled: busy,
-            action: () => void openInCodex(path),
-          },
-        ]),
-    {
-      label: "复制",
-      Icon: Copy,
-      disabled: !path || busy,
-      separator: true,
-      action: () => copyEntry("copy", path),
-    },
-    {
-      label: "剪切",
-      Icon: Scissors,
-      disabled: !path || busy,
-      action: () => copyEntry("cut", path),
-    },
-    {
-      label: "粘贴",
-      Icon: ClipboardPaste,
-      disabled: !clipboard || busy,
-      action: () => void pasteEntry(directory ? path : parent(path)),
-    },
-    ...pathActions(path).map((item, index) => ({
-      ...item,
-      separator: index === 0,
-    })),
-    ...conversationActions(path, undefined, directory).map((item, index) => ({
-      ...item,
-      separator: index === 0,
-    })),
-    {
-      label: "重命名",
-      Icon: Pencil,
-      disabled: !path || busy,
-      separator: true,
-      action: () => setDialog({ kind: "rename", path, value: base(path) }),
-    },
-    {
-      label: "移动到…",
-      Icon: Move,
-      disabled: !path || busy,
-      action: () => setDialog({ kind: "move", path, value: parent(path) }),
-    },
-    {
-      label: "删除",
-      Icon: Trash2,
-      disabled: !path || busy,
-      danger: true,
-      action: () => setDialog({ kind: "trash", path, value: "" }),
-    },
-  ];
+  const entryActions = (path: string, directory: boolean) =>
+    entryMenu(path, directory, {
+      busy,
+      clipboard: !!clipboard,
+      setDialog,
+      openInCodex,
+      copyEntry,
+      pasteEntry,
+      pathActions,
+      conversationActions,
+    });
 
   return {
     busy,
     clipboard,
     dialog,
     setDialog,
-    destinations,
-    error: workspace.error,
+    ...targets,
+    error,
+    clearError,
+    copyPath: (path: string) => void copyText(absolutePath(path)),
+    dragged,
+    dragTarget,
+    moveProgress,
+    dragOver,
+    endDrag,
+    clearDropTarget: () => setDragTarget(null),
     submit,
     drag,
     drop,

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Folder,
   FolderOpen,
@@ -55,7 +55,17 @@ export function TreeNodes({
     collect("");
     return paths;
   }, [snapshot.directories, stored.expanded, stored.onlyChanged]);
-  const tabStop = visiblePaths.includes(focused) ? focused : visiblePaths[0];
+  const tabStop = visiblePaths.includes(focused)
+    ? focused
+    : visiblePaths.includes(selected)
+      ? selected
+      : visiblePaths[0];
+  useEffect(() => {
+    const node = Array.from(
+      container.current?.querySelectorAll<HTMLElement>("[role=treeitem]") ?? [],
+    ).find((item) => item.getAttribute("aria-label") === selected);
+    node?.scrollIntoView({ block: "nearest" });
+  }, [selected, snapshot.directories]);
   const focusPath = (path?: string) => {
     if (path === undefined) return;
     const node = Array.from(
@@ -153,7 +163,7 @@ export function TreeNodes({
           : /\.(tsx?|jsx?|json|css|less|html|ya?ml)$/i.test(node.name)
             ? FileCode2
             : FileText;
-      const actions = entryActions(node.path, node.directory);
+      const menuActions = entryActions(node.path, node.directory);
       const cut =
         clipboard?.mode === "cut" &&
         (clipboard.path === node.path ||
@@ -239,20 +249,33 @@ export function TreeNodes({
             }));
           }}
         >
-          <FileContext actions={actions}>
+          <FileContext actions={menuActions}>
             <div
               data-tree-row
-              className="group/row flex min-w-0 items-center [content-visibility:auto] [contain-intrinsic-size:auto_28px]"
-              draggable={!node.deleted}
+              className={cn(
+                "group/row flex min-w-0 items-center [content-visibility:auto] [contain-intrinsic-size:auto_28px]",
+                actions.dragTarget?.directory === node.path &&
+                  (actions.dragTarget.valid
+                    ? "bg-accent ring-1 ring-primary"
+                    : "bg-destructive/10 ring-1 ring-destructive"),
+              )}
+              draggable={!node.deleted && !busy}
               onDragStart={(event) => drag(event, node)}
-              onDragOver={(event) => {
-                if (node.directory) {
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = "move";
-                }
+              onDragEnd={actions.endDrag}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node))
+                  actions.clearDropTarget();
               }}
+              onDragOver={(event) =>
+                actions.dragOver(
+                  event,
+                  node.path,
+                  node.directory && !node.deleted,
+                )
+              }
               onDrop={(event) => {
-                if (node.directory) void drop(event, node.path);
+                if (node.directory && !node.deleted)
+                  void drop(event, node.path);
                 else {
                   event.preventDefault();
                   event.stopPropagation();
@@ -264,7 +287,7 @@ export function TreeNodes({
                 <ActionDropdown
                   label={`${node.path} 的操作`}
                   Icon={MoreHorizontal}
-                  actions={actions}
+                  actions={menuActions}
                 />
               </div>
             </div>
@@ -290,6 +313,8 @@ export function TreeNodes({
       busy,
       tabStop,
       workspace.connectionError,
+      actions.dragTarget,
+      actions.dragged,
     ],
   );
   return (

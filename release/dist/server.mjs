@@ -245900,7 +245900,7 @@ import { readFile as readFile5 } from "node:fs/promises";
 
 // src/shared.ts
 var VERSION = "0.7.12";
-var BUILD_ID = true ? "c6a7693459" : "development";
+var BUILD_ID = true ? "9b6d2712d6" : "development";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,
@@ -246177,7 +246177,8 @@ var WorkspaceFiles = class {
 // src/workspace-search.ts
 import { spawn } from "node:child_process";
 async function searchWorkspace(root, query, mode, includeIgnored, changedPaths) {
-  if (!query.trim()) return { results: [], truncated: false };
+  if (!query.trim() || changedPaths?.size === 0)
+    return { results: [], truncated: false };
   const args = mode === "name" ? ["--files", "-0", "--hidden"] : [
     "--json",
     "--line-number",

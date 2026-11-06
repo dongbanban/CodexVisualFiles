@@ -8,7 +8,8 @@ export async function searchWorkspace(
   includeIgnored: boolean,
   changedPaths?: ReadonlySet<string>,
 ) {
-  if (!query.trim()) return { results: [] as SearchResult[], truncated: false };
+  if (!query.trim() || changedPaths?.size === 0)
+    return { results: [] as SearchResult[], truncated: false };
   const args =
     mode === "name"
       ? ["--files", "-0", "--hidden"]

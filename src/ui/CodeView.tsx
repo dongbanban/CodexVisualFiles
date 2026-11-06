@@ -256,7 +256,8 @@ export function CodeView(props: Props) {
           path: slot.path,
           version: slot.version,
           from: update.state.doc.lineAt(range.from).number,
-          to: update.state.doc.lineAt(range.to).number,
+          to: update.state.doc.lineAt(Math.max(range.from, range.to - 1))
+            .number,
           text: update.state.sliceDoc(range.from, range.to),
           revision: latest.current.versions[index]?.revision,
         });
@@ -347,7 +348,10 @@ export function CodeView(props: Props) {
         const slot = props.slots[index];
         if (editor && slot)
           saved.current.set(`${slot.path}:${slot.version}`, {
-            revision: props.versions[index]?.revision,
+            revision:
+              latest.current.slots[index]?.path === slot.path
+                ? latest.current.versions[index]?.revision
+                : props.versions[index]?.revision,
             selection: {
               anchor: editor.state.selection.main.anchor,
               head: editor.state.selection.main.head,
@@ -411,7 +415,7 @@ export function CodeView(props: Props) {
         path: slot.path,
         version: slot.version,
         from: editor.state.doc.lineAt(range.from).number,
-        to: editor.state.doc.lineAt(range.to).number,
+        to: editor.state.doc.lineAt(Math.max(range.from, range.to - 1)).number,
         text: editor.state.sliceDoc(range.from, range.to),
         revision: props.versions[active.current]?.revision,
       });

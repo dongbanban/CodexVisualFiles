@@ -5,6 +5,8 @@ import { MarkdownCode } from "./MarkdownCode.js";
 import { type FileData, type Slot, type FileVersion } from "../shared.js";
 import { rpc, bridge } from "./bridge.js";
 import { localReference } from "./file-utils.js";
+import type { OpenTarget } from "./file-utils.js";
+import { markdownAnchors, linkAnchor } from "./markdown-anchors.js";
 
 function RelatedImage({
   path,
@@ -48,17 +50,35 @@ export function FilePreview({
   bindingId,
   onOpen,
   onScroll,
+  anchor,
+  onError,
 }: {
   slot: Slot;
   version: FileVersion;
   bindingId: string;
-  onOpen: (path: string, line?: number) => void;
+  onOpen: (path: string, target?: OpenTarget) => void;
   onScroll: (top: number) => void;
+  anchor?: string;
+  onError: (error: unknown) => void;
 }) {
   const article = useRef<HTMLElement>(null);
+  const locate = (fragment: string) => {
+    const target = Array.from(
+      article.current?.querySelectorAll<HTMLElement>("[data-anchor]") ?? [],
+    ).find((node) => node.dataset.anchor === fragment);
+    if (target && article.current)
+      article.current.scrollTop +=
+        target.getBoundingClientRect().top -
+        article.current.getBoundingClientRect().top;
+    else onError(`未找到章节：${fragment || "（空锚点）"}`);
+  };
   useEffect(() => {
     if (article.current) article.current.scrollTop = slot.scroll;
   }, [slot.path, slot.version]);
+  useEffect(() => {
+    if (anchor !== undefined && version.exists && !version.binary)
+      locate(anchor);
+  }, [anchor, slot.path, slot.version, slot.opened, version.text]);
   if (!version.exists)
     return (
       <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
@@ -96,7 +116,7 @@ export function FilePreview({
         </p>
       )}
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, markdownAnchors]}
         remarkRehypeOptions={{
           footnoteLabel: "脚注",
           footnoteBackLabel: "返回正文",
@@ -122,14 +142,24 @@ export function FilePreview({
               onClick={(event) => {
                 event.preventDefault();
                 if (href?.startsWith("#")) {
-                  const target = document.getElementById(href.slice(1));
-                  if (target && article.current?.contains(target))
-                    target.scrollIntoView({ block: "start" });
+                  try {
+                    locate(linkAnchor(href)!);
+                  } catch {
+                    onError("章节链接编码无效");
+                  }
                   return;
                 }
                 const relative = localReference(slot.path, href ?? "");
-                if (relative) onOpen(relative);
-                else if (href && /^https?:\/\//i.test(href))
+                if (relative) {
+                  try {
+                    onOpen(relative, {
+                      anchor: linkAnchor(href ?? ""),
+                      version: slot.version,
+                    });
+                  } catch {
+                    onError("章节链接编码无效");
+                  }
+                } else if (href && /^https?:\/\//i.test(href))
                   void bridge.openLink({ url: href });
               }}
             >

@@ -121,6 +121,19 @@ export function TreeNodes({
         </p>
       );
     const visible = nodes.filter((node) => !stored.onlyChanged || node.status);
+    if (!visible.length && path === "" && stored.onlyChanged)
+      return (
+        <div className="p-3 text-muted-foreground">
+          没有符合仅改动条件的文件
+          <Button
+            size="xs"
+            variant="link"
+            onClick={() => setStored((old) => ({ ...old, onlyChanged: false }))}
+          >
+            取消仅改动
+          </Button>
+        </div>
+      );
     return visible.map((node, index) => {
       const expanded = expandedPaths.has(node.path);
       const Icon = node.directory

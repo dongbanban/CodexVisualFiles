@@ -1,4 +1,10 @@
-import { type FileData, type Slot } from "../shared.js";
+import { type FileData, type Slot, type Version } from "../shared.js";
+
+export interface OpenTarget {
+  line?: number;
+  anchor?: string;
+  version?: Version;
+}
 
 export const parent = (path: string) =>
   path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";

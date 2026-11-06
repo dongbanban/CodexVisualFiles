@@ -6,6 +6,7 @@ export async function searchWorkspace(
   query: string,
   mode: "name" | "text",
   includeIgnored: boolean,
+  changedPaths?: ReadonlySet<string>,
 ) {
   if (!query.trim()) return { results: [] as SearchResult[], truncated: false };
   const args =
@@ -49,26 +50,30 @@ export async function searchWorkspace(
         while ((end = buffer.indexOf(separator)) !== -1) {
           const record = buffer.slice(0, end);
           buffer = buffer.slice(end + separator.length);
+          let result: SearchResult | undefined;
           if (mode === "name") {
             if (record.includes(query))
-              results.push({ path: record.replace(/^\.\//, "") });
+              result = { path: record.replace(/^\.\//, "") };
           } else {
             const item = JSON.parse(record);
             if (
               item.type === "match" &&
               typeof item.data.path.text === "string"
             )
-              results.push({
+              result = {
                 path: item.data.path.text.replace(/^\.\//, ""),
                 line: item.data.line_number,
                 text: String(item.data.lines.text ?? "").trimEnd(),
-              });
+              };
           }
-          if (results.length >= 500) {
+          if (!result || (changedPaths && !changedPaths.has(result.path)))
+            continue;
+          if (results.length === 500) {
             truncated = true;
             child.kill();
             break;
           }
+          results.push(result);
         }
       });
       child.stderr.on("data", (chunk) => {

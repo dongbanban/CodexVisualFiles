@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   FolderOpen,
   FileCode2,
@@ -34,7 +34,7 @@ export function ContentViewer({
     setStored,
     snapshot,
     reading,
-    line,
+    target,
     selection,
     open,
     onScroll,
@@ -46,9 +46,20 @@ export function ContentViewer({
   const { busy, pathActions, conversationActions } = actions;
   const [sources, setSources] = useState<Record<string, boolean>>({});
   const slots = stored.viewer.slots;
+  useEffect(() => {
+    const slot = slots[stored.viewer.active];
+    if (
+      slot &&
+      target &&
+      (target.line !== undefined || target.anchor !== undefined)
+    )
+      setSources((old) => ({ ...old, [slot.path]: target.line !== undefined }));
+  }, [target]);
   const previews = slots.map(
     (slot) =>
-      !!slot && markdown(slot.path) && !sources[`${slot.path}:${slot.version}`],
+      !!slot &&
+      markdown(slot.path) &&
+      !(sources[slot.path] ?? stored.viewer.diff),
   );
   const versions = slots.map((slot) =>
     textVersion(slot ? snapshot.files[slot.path] : undefined, slot),
@@ -138,13 +149,21 @@ export function ContentViewer({
                       event.stopPropagation();
                       setSources((old) => ({
                         ...old,
-                        [`${slot.path}:${slot.version}`]:
-                          !old[`${slot.path}:${slot.version}`],
+                        [slot.path]: !(
+                          old[slot.path] ??
+                          (target?.line !== undefined || stored.viewer.diff)
+                        ),
                       }));
                     }}
                   >
                     <Eye className="size-3.5" />
-                    {previews[index] ? "预览" : "源码"}
+                    {splitView
+                      ? previews[index]
+                        ? "预览对照"
+                        : "源码差异"
+                      : previews[index]
+                        ? "预览"
+                        : "源码"}
                   </Button>
                 )}
                 {!markdown(slot.path) && !versions[index]?.binary && (
@@ -188,7 +207,7 @@ export function ContentViewer({
             versions={versions}
             diff={diff}
             single={!splitView}
-            line={line}
+            target={target}
             active={stored.viewer.active}
             onSelection={(value) => {
               selection.current = value;
@@ -229,6 +248,8 @@ export function ContentViewer({
                     version={versions[index]!}
                     bindingId={binding.bindingId}
                     onOpen={open}
+                    anchor={target?.anchor}
+                    onError={workspace.setError}
                     onScroll={(top) => onScroll(index, top)}
                   />
                 ) : (

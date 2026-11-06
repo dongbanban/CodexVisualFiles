@@ -245900,7 +245900,7 @@ import { readFile as readFile5 } from "node:fs/promises";
 
 // src/shared.ts
 var VERSION = "0.7.12";
-var BUILD_ID = true ? "65ae08aa49" : "development";
+var BUILD_ID = true ? "bb2ed88b4b" : "development";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,
@@ -246176,7 +246176,7 @@ var WorkspaceFiles = class {
 
 // src/workspace-search.ts
 import { spawn } from "node:child_process";
-async function searchWorkspace(root, query, mode, includeIgnored) {
+async function searchWorkspace(root, query, mode, includeIgnored, changedPaths) {
   if (!query.trim()) return { results: [], truncated: false };
   const args = mode === "name" ? ["--files", "-0", "--hidden"] : [
     "--json",
@@ -246217,23 +246217,27 @@ async function searchWorkspace(root, query, mode, includeIgnored) {
         while ((end = buffer.indexOf(separator)) !== -1) {
           const record2 = buffer.slice(0, end);
           buffer = buffer.slice(end + separator.length);
+          let result;
           if (mode === "name") {
             if (record2.includes(query))
-              results.push({ path: record2.replace(/^\.\//, "") });
+              result = { path: record2.replace(/^\.\//, "") };
           } else {
             const item = JSON.parse(record2);
             if (item.type === "match" && typeof item.data.path.text === "string")
-              results.push({
+              result = {
                 path: item.data.path.text.replace(/^\.\//, ""),
                 line: item.data.line_number,
                 text: String(item.data.lines.text ?? "").trimEnd()
-              });
+              };
           }
-          if (results.length >= 500) {
+          if (!result || changedPaths && !changedPaths.has(result.path))
+            continue;
+          if (results.length === 500) {
             truncated = true;
             child.kill();
             break;
           }
+          results.push(result);
         }
       });
       child.stderr.on("data", (chunk) => {
@@ -246555,8 +246559,15 @@ var Workspace = class _Workspace {
       throw new Error("\u53EA\u80FD\u5F15\u7528\u6587\u4EF6\u6216\u76EE\u5F55");
     return { absolutePath, directory: info.isDirectory() };
   }
-  async search(query, mode, includeIgnored) {
-    return searchWorkspace(this.root, query, mode, includeIgnored);
+  async search(query, mode, includeIgnored, onlyChanged = false) {
+    const info = onlyChanged ? await this.refreshInfo() : null;
+    return searchWorkspace(
+      this.root,
+      query,
+      mode,
+      includeIgnored,
+      info ? new Set(Object.keys(info.changes)) : void 0
+    );
   }
   async mutate(action, path, destination) {
     if (!path || resolve2(this.root, path) === this.root)
@@ -247240,7 +247251,8 @@ serveStdio(() => {
         knownFiles: external_exports.record(pathSchema, external_exports.string().length(64)).optional(),
         query: external_exports.string().max(2e3).optional(),
         mode: external_exports.enum(["name", "text"]).optional(),
-        includeIgnored: external_exports.boolean().optional()
+        includeIgnored: external_exports.boolean().optional(),
+        onlyChanged: external_exports.boolean().optional()
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: { ui: { visibility: ["app"] } }
@@ -247298,7 +247310,8 @@ serveStdio(() => {
           await workspace.search(
             args.query ?? "",
             args.mode ?? "name",
-            args.includeIgnored ?? false
+            args.includeIgnored ?? false,
+            args.onlyChanged ?? false
           )
         );
       } catch (error62) {

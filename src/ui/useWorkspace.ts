@@ -9,13 +9,14 @@ import {
   type Snapshot,
   type FileData,
   type Slot,
-  type SearchResult,
   type DefinitionLocation,
 } from "../shared.js";
 import { type CodeSelection } from "./CodeView.js";
 import { toast } from "sonner";
 import { rpc, ToolError } from "./bridge.js";
 import { ancestors, errorText } from "./file-utils.js";
+import { useWorkspaceSearch } from "./useWorkspaceSearch.js";
+import type { OpenTarget } from "./file-utils.js";
 import { useCodeNavigation } from "./useCodeNavigation.js";
 
 export function useWorkspace(binding: Binding) {
@@ -31,8 +32,6 @@ export function useWorkspace(binding: Binding) {
     errors: {},
   });
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [truncated, setTruncated] = useState(false);
   const [syncError, setSyncError] = useState("");
   const [operationError, setOperationError] = useState("");
   const [connectionError, setConnectionError] = useState("");
@@ -54,10 +53,9 @@ export function useWorkspace(binding: Binding) {
   const [manualRefreshing, setManualRefreshing] = useState(false);
 
   const [reading, setReading] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState("");
 
-  const [line, setLine] = useState<number>();
+  const [target, setTarget] = useState<OpenTarget | undefined>();
   const [codeLocation, setCodeLocation] = useState<DefinitionLocation | null>(
     null,
   );
@@ -172,7 +170,7 @@ export function useWorkspace(binding: Binding) {
       };
     });
     setSelected(location.path);
-    setLine(undefined);
+    setTarget(undefined);
     selection.current = null;
     setCodeLocation({ ...location });
     return true;
@@ -300,61 +298,32 @@ export function useWorkspace(binding: Binding) {
     }, 200);
     return () => clearTimeout(timer);
   }, [stored, call]);
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      setSearching(false);
-      return;
-    }
-    let cancelled = false;
-    setSearching(true);
-    const timer = setTimeout(() => {
-      void call<{ results: SearchResult[]; truncated: boolean }>(
-        "visualfiles_read",
-        {
-          action: "search",
-          query,
-          mode: stored.searchMode,
-          includeIgnored: stored.includeIgnored,
-        },
-      )
-        .then((data) => {
-          if (!cancelled) {
-            setResults(data.results);
-            setTruncated(data.truncated);
-          }
-        })
-        .catch((error) => {
-          if (!cancelled) {
-            setResults([]);
-            setError(error);
-          }
-        })
-        .finally(() => {
-          if (!cancelled) setSearching(false);
-        });
-    }, 250);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [query, stored.searchMode, stored.includeIgnored, call]);
+  const search = useWorkspaceSearch(
+    query,
+    stored,
+    JSON.stringify(snapshot.info.changes),
+    call,
+  );
 
   const open = useCallback(
-    (path: string, targetLine?: number) => {
+    (path: string, destination?: OpenTarget) => {
       const request = ++openRequest.current;
       setCodeLocation(null);
       setSelected(path);
       setReading(true);
-      setLine(targetLine);
+      setTarget(undefined);
       selection.current = null;
       openQueue.current = openQueue.current
         .then(async () => {
           const data = await call<FileData>("visualfiles_read", {
             action: "file",
             path,
+            ...(destination?.version === "head"
+              ? { version: "head", head: snapshot.info.head }
+              : {}),
           });
           if (!alive.current || request !== openRequest.current) return;
+          setTarget(destination ? { ...destination } : undefined);
           setSnapshot((old) => ({
             ...old,
             files: { ...old.files, [path]: data },
@@ -362,7 +331,15 @@ export function useWorkspace(binding: Binding) {
           setStored((old) => ({
             ...old,
             expanded: [...new Set([...old.expanded, ...ancestors(path)])],
-            viewer: openFile(old.viewer, path, data.hasDiff),
+            viewer: {
+              ...openFile(
+                old.viewer,
+                path,
+                data.hasDiff || destination?.version === "head",
+              ),
+              active:
+                destination?.version === "head" ? 0 : data.hasDiff ? 1 : 0,
+            },
           }));
         })
         .catch((error) => {
@@ -372,7 +349,7 @@ export function useWorkspace(binding: Binding) {
           if (alive.current) setReading(false);
         });
     },
-    [call],
+    [call, snapshot.info.head],
   );
   const onScroll = useCallback((index: number, top: number) => {
     const original = stateRef.current.viewer.slots[index];
@@ -411,16 +388,14 @@ export function useWorkspace(binding: Binding) {
     snapshot,
     query,
     setQuery,
-    results,
-    truncated,
+    ...search,
     refreshing,
     manualRefreshing,
     manualRefresh,
     reading,
-    searching,
     selected,
     setSelected,
-    line,
+    target,
     codeLocation,
     codeNavigation,
     filesRef,

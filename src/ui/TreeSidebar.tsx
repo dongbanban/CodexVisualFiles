@@ -32,6 +32,8 @@ export function TreeSidebar({
     results,
     truncated,
     searching,
+    searchError,
+    retrySearch,
     setSelected,
     open,
   } = workspace;
@@ -47,7 +49,7 @@ export function TreeSidebar({
           placeholder={
             stored.searchMode === "name"
               ? "搜索文件名（区分大小写）…"
-              : "搜索项目内容…"
+              : "搜索项目内容（区分大小写）…"
           }
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -100,7 +102,7 @@ export function TreeSidebar({
               setStored((old) => ({ ...old, includeIgnored: value }))
             }
           />
-          搜索忽略文件
+          包含 Git 忽略文件
         </Label>
       </div>
       <FileContext actions={entryActions("", true)}>
@@ -159,44 +161,72 @@ export function TreeSidebar({
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => void drop(event, "")}
         >
-          {query ? (
+          {query.trim() ? (
             <div>
               {searching && (
                 <p className="p-3 text-xs text-muted-foreground">搜索中…</p>
               )}
-              {!searching && !results.length && (
+              {!searching && !searchError && !results.length && (
                 <p className="p-3 text-xs text-muted-foreground">
-                  没有匹配结果
+                  {stored.onlyChanged
+                    ? "没有符合仅改动条件的结果"
+                    : "没有匹配结果"}
+                  {stored.onlyChanged && (
+                    <Button
+                      size="xs"
+                      variant="link"
+                      onClick={() =>
+                        setStored((old) => ({ ...old, onlyChanged: false }))
+                      }
+                    >
+                      取消仅改动
+                    </Button>
+                  )}
                 </p>
               )}
-              {results
-                .filter(
-                  (result) =>
-                    !stored.onlyChanged || snapshot.info.changes[result.path],
-                )
-                .map((result, index) => (
-                  <Button
-                    variant="ghost"
-                    key={`${result.path}:${result.line ?? index}`}
-                    className="h-auto w-full flex-col items-start gap-1 rounded-none px-3 py-2 text-left text-xs font-normal whitespace-normal"
-                    onClick={() => open(result.path, result.line)}
-                  >
-                    <span className="flex max-w-full items-center gap-1 break-all">
-                      <FileText className="size-3 shrink-0" />
-                      {result.path}
-                      {result.line && (
-                        <span className="text-muted-foreground">
-                          :{result.line}
-                        </span>
-                      )}
-                    </span>
-                    {result.text && (
-                      <code className="max-w-full truncate text-xs text-muted-foreground">
-                        {result.text}
-                      </code>
-                    )}
+              {searchError && (
+                <div role="alert" className="p-3 text-destructive">
+                  {searchError}
+                  <Button size="xs" variant="outline" onClick={retrySearch}>
+                    重试搜索
                   </Button>
-                ))}
+                </div>
+              )}
+              {!searching && !searchError && (
+                <p role="status" className="px-3 text-muted-foreground">
+                  {results.length} 项结果{truncated ? "（已截断）" : ""}
+                </p>
+              )}
+              {results.map((result, index) => (
+                <Button
+                  variant="ghost"
+                  key={`${result.path}:${result.line ?? index}`}
+                  className="h-auto w-full flex-col items-start gap-1 rounded-none px-3 py-2 text-left text-xs font-normal whitespace-normal"
+                  onClick={() =>
+                    open(
+                      result.path,
+                      result.line
+                        ? { line: result.line, version: "current" }
+                        : undefined,
+                    )
+                  }
+                >
+                  <span className="flex max-w-full items-center gap-1 break-all">
+                    <FileText className="size-3 shrink-0" />
+                    {result.path}
+                    {result.line && (
+                      <span className="text-muted-foreground">
+                        :{result.line}
+                      </span>
+                    )}
+                  </span>
+                  {result.text && (
+                    <code className="max-w-full truncate text-xs text-muted-foreground">
+                      {result.text}
+                    </code>
+                  )}
+                </Button>
+              ))}
               {truncated && (
                 <p className="p-3 text-xs text-muted-foreground">
                   显示前 500 项，请缩小搜索范围

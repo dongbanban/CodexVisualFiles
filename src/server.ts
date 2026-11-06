@@ -247,6 +247,7 @@ serveStdio(() => {
         query: z.string().max(2000).optional(),
         mode: z.enum(["name", "text"]).optional(),
         includeIgnored: z.boolean().optional(),
+        onlyChanged: z.boolean().optional(),
       }),
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: { ui: { visibility: ["app"] } },
@@ -308,6 +309,7 @@ serveStdio(() => {
             args.query ?? "",
             args.mode ?? "name",
             args.includeIgnored ?? false,
+            args.onlyChanged ?? false,
           ),
         );
       } catch (error) {

@@ -368,8 +368,20 @@ export class Workspace {
       throw new Error("只能引用文件或目录");
     return { absolutePath, directory: info.isDirectory() };
   }
-  async search(query: string, mode: "name" | "text", includeIgnored: boolean) {
-    return searchWorkspace(this.root, query, mode, includeIgnored);
+  async search(
+    query: string,
+    mode: "name" | "text",
+    includeIgnored: boolean,
+    onlyChanged = false,
+  ) {
+    const info = onlyChanged ? await this.refreshInfo() : null;
+    return searchWorkspace(
+      this.root,
+      query,
+      mode,
+      includeIgnored,
+      info ? new Set(Object.keys(info.changes)) : undefined,
+    );
   }
   async mutate(
     action: "createFile" | "createDirectory" | "move" | "copy" | "trash",

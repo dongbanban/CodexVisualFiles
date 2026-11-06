@@ -6,6 +6,7 @@ import {
   drawSelection,
   keymap,
   highlightActiveLineGutter,
+  highlightActiveLine,
 } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import {
@@ -27,6 +28,7 @@ import { ArrowLeft, ArrowRight, CornerDownRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { IconButton } from "./chrome.js";
 import type { Slot, FileVersion, DefinitionLocation } from "../shared.js";
+import type { OpenTarget } from "./file-utils.js";
 import type { CodeNavigation } from "./useCodeNavigation.js";
 
 export interface CodeSelection {
@@ -44,7 +46,7 @@ interface Props {
   single?: boolean;
   onSelection: (selection: CodeSelection) => void;
   onScroll: (index: number, top: number) => void;
-  line?: number;
+  target?: OpenTarget;
   active?: number;
   head: string | null;
   location: DefinitionLocation | null;
@@ -159,6 +161,7 @@ export function CodeView(props: Props) {
       lineNumbers(),
       drawSelection(),
       highlightActiveLineGutter(),
+      highlightActiveLine(),
       props.dark ? oneDark : syntaxHighlighting(defaultHighlightStyle),
       highlightSelectionMatches(),
       search({ caseSensitive: true }),
@@ -326,17 +329,22 @@ export function CodeView(props: Props) {
     setDefinitionAvailable(canDefine(active.current));
   }, [props.active]);
   useEffect(() => {
-    if (!props.line) return;
-    for (const editor of editors.current)
-      if (editor)
-        editor.dispatch({
-          effects: EditorView.scrollIntoView(
-            editor.state.doc.line(Math.min(props.line, editor.state.doc.lines))
-              .from,
-            { y: "center" },
-          ),
-        });
-  }, [props.line, identity]);
+    const line = props.target?.line;
+    if (!line) return;
+    const index = props.slots.findIndex((slot) => slot?.version === "current");
+    const editor = editors.current[index];
+    if (editor) {
+      const from = editor.state.doc.line(
+        Math.max(1, Math.min(line, editor.state.doc.lines)),
+      ).from;
+      editor.dispatch({
+        selection: { anchor: from },
+        effects: EditorView.scrollIntoView(from, { y: "center" }),
+      });
+      editor.focus();
+    }
+  }, [props.target, identity]);
+
   useEffect(() => {
     const location = props.location;
     if (!location) return;

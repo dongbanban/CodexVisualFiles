@@ -1,4 +1,4 @@
-export const VERSION = "0.7.13";
+export const VERSION = "0.7.14";
 declare const __VISUALFILES_BUILD__: string;
 export const BUILD_ID =
   typeof __VISUALFILES_BUILD__ === "string"

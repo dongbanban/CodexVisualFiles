@@ -84,7 +84,7 @@ export async function addReferenceDraft(
   target: ConversationTarget,
 ) {
   if (!api || !supportsReferenceDraft(api, capability))
-    throw new Error("当前客户端不支持添加引用草稿，请更新客户端或复制路径");
+    throw new Error("当前客户端不支持引用，请更新客户端或复制路径");
   const result = await api.send(referenceDraft(reference, target));
-  if (result.isError) throw new Error("未能添加引用草稿，请稍后重试");
+  if (result.isError) throw new Error("未能引用到对话，请稍后重试");
 }

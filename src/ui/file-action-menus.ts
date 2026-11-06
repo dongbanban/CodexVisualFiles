@@ -29,11 +29,7 @@ export function entryMenu(
     copyEntry: (mode: "copy" | "cut", path: string) => void;
     pasteEntry: (directory: string) => Promise<void>;
     pathActions: (path: string) => MenuAction[];
-    conversationActions: (
-      path: string,
-      slot: undefined,
-      directory: boolean,
-    ) => MenuAction[];
+    conversationActions: (path: string) => MenuAction[];
   },
 ): MenuAction[] {
   const {
@@ -94,7 +90,7 @@ export function entryMenu(
       ...item,
       separator: index === 0,
     })),
-    ...conversationActions(path, undefined, directory).map((item, index) => ({
+    ...conversationActions(path).map((item, index) => ({
       ...item,
       separator: index === 0,
     })),

@@ -239,11 +239,7 @@ export function useFileActions(workspace: WorkspaceModel) {
         target,
       );
       if (alive.current)
-        setNotice(
-          target === "new"
-            ? "已在新对话中添加引用草稿"
-            : "已添加到当前对话草稿",
-        );
+        setNotice(target === "new" ? "已引用到新对话" : "已引用到当前对话");
     } catch (error) {
       if (alive.current) setError(error, undefined, path);
     } finally {
@@ -346,7 +342,7 @@ export function useFileActions(workspace: WorkspaceModel) {
       endDrag();
     }
   };
-  const referenceScope = (path: string, slot?: Slot, directory = false) => {
+  const referenceScope = (path: string, slot?: Slot) => {
     const code =
       slot &&
       selection?.path === path &&
@@ -358,23 +354,17 @@ export function useFileActions(workspace: WorkspaceModel) {
       ? `引用${slot?.version === "head" ? " HEAD " : ""}选中代码 L${code.from}–L${code.to}`
       : slot?.version === "head"
         ? "引用 HEAD 内容"
-        : directory
-          ? "引用目录"
-          : "引用文件";
+        : "引用文件";
   };
-  const conversationActions = (
-    path: string,
-    slot?: Slot,
-    directory = false,
-  ): MenuAction[] => [
+  const conversationActions = (path: string, slot?: Slot): MenuAction[] => [
     {
-      label: `${referenceScope(path, slot, directory)} · 添加到当前对话草稿`,
+      label: "引用到当前对话",
       Icon: MessageSquare,
       disabled: busy || !referenceDraftSupported(),
       action: () => void addToConversation(path, "active", slot),
     },
     {
-      label: `${referenceScope(path, slot, directory)} · 添加到新对话草稿`,
+      label: "引用到新对话",
       Icon: MessageSquare,
       disabled: busy || !referenceDraftSupported(),
       action: () => void addToConversation(path, "new", slot),

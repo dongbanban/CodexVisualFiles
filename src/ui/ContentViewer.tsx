@@ -125,20 +125,20 @@ export function ContentViewer({
               </Button>
             )}
             <ActionDropdown
-              label="添加引用"
+              label="引用"
               Icon={MessageSquare}
               disabled={busy}
               description={
                 draftSupported
                   ? `${referenceScope(path, activeSlot!)} · 不自动发送`
-                  : "当前客户端不支持引用草稿，请更新客户端或复制路径"
+                  : "当前客户端不支持引用，请更新客户端或复制路径"
               }
               actions={[
                 ...conversationActions(path, activeSlot!),
                 ...(!draftSupported ? pathActions(path) : []),
               ]}
             >
-              添加引用
+              引用
             </ActionDropdown>
             <ActionDropdown
               label="更多文件操作"

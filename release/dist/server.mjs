@@ -245900,7 +245900,7 @@ import { readFile as readFile5 } from "node:fs/promises";
 
 // src/shared.ts
 var VERSION = "0.7.15";
-var BUILD_ID = true ? "d084659e98" : "development";
+var BUILD_ID = true ? "dd54077037" : "development";
 var emptyViewer = () => ({
   slots: [null, null],
   active: 0,

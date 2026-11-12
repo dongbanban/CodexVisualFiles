@@ -52,10 +52,18 @@ export function WorkspacePanel({
   const [sidebar, setSidebar] = useState(true);
   const treePanel = usePanelRef();
   const { ref, width } = useElementWidth<HTMLDivElement>();
-  const compact = width > 0 && width < stored.treeWidth + 321;
+  const compact = width > 0 && width < 240 + 1 + 320;
   const hasFile = stored.viewer.slots.some(Boolean);
   const [treeOnly, setTreeOnly] = useState(!hasFile);
   const treeVisible = compact ? treeOnly : sidebar;
+  useEffect(() => {
+    if (!width || compact || !sidebar) return;
+    // Newly mounted panels register their constraints before the next frame.
+    const frame = requestAnimationFrame(() =>
+      treePanel.current?.resize(stored.treeWidth),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [width, compact, sidebar, stored.treeWidth, treePanel]);
   useEffect(() => {
     if (compact) setTreeOnly(!hasFile && !workspace.reading);
   }, [compact, hasFile, workspace.reading]);
